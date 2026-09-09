@@ -1,36 +1,29 @@
 # Uncertainty-Aware Autonomous Target-Following Robot
 
-A browser-based robotics simulation for target following under uncertainty. The robot follows a moving target using noisy camera-like measurements, a 4-state Kalman filter, A* path planning, Dijkstra comparison, dynamic obstacles, controlled experiments, and failure-case analysis.
+A browser-based robotics simulation for autonomous target following under sensing uncertainty, obstacle constraints, and dynamic environment changes.
 
-This final version is **simulation-focused**. Webcam validation has been removed from the main project to keep the system clean, repeatable, and easier to evaluate. Real camera/OpenCV validation is listed only as future work.
-
----
-
-## Project objective
-
-The goal is to study how a mobile robot can follow an assigned moving target when sensing is imperfect and the environment contains obstacles.
-
-In real robotics, the robot may face:
-
-- noisy sensor measurements,
-- temporary target loss,
-- obstacle line-of-sight blocking,
-- static and dynamic obstacles,
-- speed, acceleration, and turning limits,
-- planning failures or high tracking error.
-
-This project models those challenges in a 2D simulation and evaluates how estimation and planning improve target-following behavior.
+The system models a mobile robot that follows a moving target using noisy camera-like measurements. A 4-state Kalman filter estimates the target state, A* plans a collision-aware route around obstacles, and Dijkstra is used as a baseline planner comparison. The simulation also includes line-of-sight blocking, dynamic obstacles, controlled experiment logging, and failure-case analysis.
 
 ---
 
-## System architecture
+## Project Overview
+
+Target following is a common robotics problem in assistive robots, warehouse robots, hospital support robots, luggage-following robots, and indoor mobile robots. In practical settings, a robot cannot assume perfect target location. Sensor measurements may be noisy, the target may temporarily disappear, obstacles may block visibility, and the robot may face motion limits.
+
+This project simulates those challenges in a 2D environment and evaluates how estimation, planning, and control work together in a target-following pipeline.
+
+---
+
+## Core Robotics Pipeline
 
 ```text
 Moving Target
     ↓
 Camera-like Sensor Model
     ↓
-Noisy Measurement + Visibility Check
+Visibility, Range, and Line-of-Sight Check
+    ↓
+Noisy Target Measurement
     ↓
 Target Acquisition
     ↓
@@ -38,70 +31,172 @@ Target Acquisition
     ↓
 A* Path Planning Around Obstacles
     ↓
-Realistic Robot Motion Controller
+Robot Motion Controller
     ↓
-Metrics, Controlled Experiments, and Failure Analysis
+Experiment Metrics and Failure Analysis
 ```
 
-Important distinction:
-
-- The simulator knows the true target position because it draws the world.
-- The robot does **not** directly know the true target position.
-- The robot uses noisy camera-like measurements and Kalman estimation.
+The simulator knows the ground-truth target position for evaluation, but the robot does not directly use the true position. The robot acts on noisy measurements and filtered estimates.
 
 ---
 
-## Key features
+## Key Features
 
-### Perception and uncertainty
+### 1. Camera-Like Sensing
 
-- Camera-like target measurement with configurable noise.
-- Target acquisition before tracking begins.
-- Camera range modeling.
-- Temporary occlusion.
+- Configurable sensor noise.
+- Camera range limitation.
+- Target acquisition logic.
+- Temporary target loss.
 - Line-of-sight blocking by obstacles.
-- Prediction-only tracking when the target is not visible.
+- Prediction-only behavior when the target is not visible.
 
-### State estimation
+### 2. Kalman-Based State Estimation
 
-- 4-state Kalman filter:
+The estimator tracks the target using a 4-state model:
 
 ```text
 State = [x, y, vx, vy]
 ```
 
-- Prediction step using target velocity.
-- Correction step when camera measurement is available.
-- Comparison with raw measurement and moving average estimation.
+The Kalman filter predicts target motion and corrects the estimate whenever a new camera-like measurement is available.
 
-### Planning and control
+### 3. Obstacle-Aware Path Planning
 
-- Static obstacles.
-- Dynamic moving obstacles.
+- Static obstacle maps.
 - A* path planning for robot navigation.
-- Dijkstra planner comparison.
-- Collision avoidance and replanning.
-- Realistic robot speed, acceleration, turning-rate, and following-distance constraints.
+- Dijkstra planner used as a comparison baseline.
+- Path length, planning time, and explored-node metrics.
+- Dynamic replanning when the environment changes.
 
-### Evaluation
+### 4. Realistic Robot Motion
 
-- Tracking error.
-- Mean error and RMSE.
-- Detection rate.
-- Line-of-sight blocked rate.
-- A* planning time and explored nodes.
-- Dijkstra planning time and explored nodes.
-- Collision count.
-- Dynamic replan count.
-- Controlled experiment recording.
-- Summary CSV and frame-level CSV export.
-- Failure-case timeline and diagnosis.
+- Maximum velocity limit.
+- Acceleration limit.
+- Turning-rate limit.
+- Safe following distance.
+- Collision monitoring.
+
+### 5. Dynamic Obstacles
+
+The environment can include moving obstacles that force the robot to replan during target following.
+
+### 6. Failure-Case Analysis
+
+The system identifies and reports difficult operating conditions such as:
+
+- target not acquired,
+- target outside camera range,
+- line-of-sight blocked,
+- no valid path,
+- robot stuck near obstacles,
+- high tracking error,
+- slow robot response.
 
 ---
 
-## How to run
+## Scenario Library
 
-Open the project folder and run a local server:
+The interface includes predefined scenarios for repeatable evaluation.
+
+| Scenario | Purpose |
+|---|---|
+| `baseline` | Normal reference run for target following |
+| `high_noise` | Evaluates Kalman robustness under high sensor noise |
+| `line_of_sight_blocked` | Tests camera visibility when an obstacle blocks the target |
+| `dense_obstacles` | Evaluates planner behavior in a cluttered map |
+| `dynamic_obstacles` | Tests replanning when obstacles move |
+| `slow_robot` | Demonstrates tracking limitations when the robot is slower than required |
+
+Each scenario automatically configures the robot position, target position, sensor noise, camera range, obstacle density, dynamic obstacle state, and trial name.
+
+---
+
+## Metrics Logged
+
+The experiment system records both summary-level and frame-level metrics.
+
+### Target Tracking Metrics
+
+- Tracking error
+- Mean tracking error
+- Tracking RMSE
+- Detection rate
+- Line-of-sight blocked rate
+- Frames since last detection
+
+### Estimation Metrics
+
+- Raw measurement error
+- Moving average error
+- Kalman filter error
+- Estimator RMSE comparison
+- Prediction error during target loss
+
+### Planning Metrics
+
+- A* path status
+- A* path length
+- A* planning time
+- A* explored nodes
+- Dijkstra path status
+- Dijkstra path length
+- Dijkstra planning time
+- Dijkstra explored nodes
+- A* node-saving percentage compared with Dijkstra
+
+### Control and Failure Metrics
+
+- Robot speed
+- Dynamic replan count
+- Collision count
+- Failure severity
+- Failure cause
+- Suggested mitigation
+
+---
+
+## Analytics Dashboard
+
+The project includes an analytics dashboard for reviewing system performance.
+
+Dashboard sections include:
+
+- live performance snapshot,
+- estimator comparison graphs,
+- target and robot position graphs,
+- A* and Dijkstra planner comparison,
+- saved trial table,
+- experiment summary graph,
+- failure timeline,
+- report-ready findings generated from measured trial data.
+
+Saved trial summaries are stored in browser `localStorage`, and experiment data can be exported as CSV.
+
+---
+
+## Exported Data
+
+The application can export:
+
+```text
+results/experiment-summary.csv
+results/frame-log.csv
+```
+
+The repository includes a template file:
+
+```text
+results/experiment-summary-template.csv
+```
+
+Measured CSV files should be generated from actual simulation runs.
+
+---
+
+## How to Run
+
+Open the project folder and start a local server:
 
 ```bash
 python -m http.server 8000
@@ -113,175 +208,65 @@ Then open:
 http://localhost:8000
 ```
 
-The project can also run by opening `index.html` directly, but local server mode is recommended.
+The simulation is implemented using HTML, CSS, JavaScript, and the Canvas API. No external JavaScript libraries are required.
 
 ---
 
-## Recommended project outputs
-
-Add real project outputs inside `assets/project outputs/` after running the project.
-
-| Project Output | What to show |
-|---|---|
-| `main-simulation.png` | Full simulation with robot, target, noisy measurement, Kalman estimate, and A* path |
-| `kalman-high-noise.png` | High sensor noise showing noisy measurement vs smoother Kalman estimate |
-| `line-of-sight-blocked.png` | Obstacle blocking camera line of sight |
-| `astar-path-planning.png` | A* path around static obstacles |
-| `astar-vs-dijkstra.png` | Planner comparison table |
-| `dynamic-obstacles.png` | Moving obstacles and replanning |
-| `failure-case-analysis.png` | Failure diagnosis and timeline |
-| `controlled-experiments.png` | Saved trials and experiment results |
-
----
-
-## Controlled experiments
-
-Use the **Controlled Experiments** panel to record trials.
-
-Recommended final test cases:
-
-| Trial | Sensor Noise | Obstacle Density | Dynamic Obstacles | Robot Speed | Purpose |
-|---|---:|---|---|---:|---|
-| `baseline` | 25 | Medium | Disabled | 2.8 | Normal system performance |
-| `high_noise` | 70 | Medium | Disabled | 2.8 | Kalman robustness under noisy sensing |
-| `line_of_sight_blocked` | 25 | Medium | Disabled | 2.8 | Camera cannot see through obstacles |
-| `dense_obstacles` | 25 | High | Disabled | 2.8 | A* planning under clutter |
-| `dynamic_obstacles` | 25 | Medium | Enabled | 2.8 | Reactive replanning |
-| `slow_robot` | 25 | Medium | Enabled | 1.2 | Robot motion limitation and failure case |
-
-Export the final result files into `results/`:
+## Repository Structure
 
 ```text
-results/experiment-summary.csv
-results/frame-log.csv
+.
+├── index.html
+├── style.css
+├── script.js
+├── README.md
+├── LICENSE
+├── RUN_INSTRUCTIONS.txt
+├── docs/
+│   ├── demo-script.md
+│   ├── interview-qa.md
+│   ├── portfolio-text.md
+│   ├── project-notes.md
+│   └── robotics_project_quantitative_test_plan.xlsx
+├── results/
+│   └── experiment-summary-template.csv
+└── assets/
+    └── screenshots/
 ```
 
-Use real exported numbers only. Do not add fake results.
-
 ---
 
-## Failure cases studied
-
-The project detects and reports:
-
-- target not acquired,
-- extended camera or line-of-sight loss,
-- no valid path,
-- robot stuck near obstacles,
-- high tracking error,
-- dense obstacle planning stress,
-- slow robot / control limitation.
-
-This makes the project stronger because it studies both successful and difficult cases.
-
----
-
-## Technical explanation
-
-### Kalman filter
-
-The Kalman filter estimates target position and velocity.
-
-```text
-x_next  = x + vx * dt
-y_next  = y + vy * dt
-vx_next = vx
-vy_next = vy
-```
-
-When a camera measurement is available, the filter corrects the estimate. When the target is lost, it predicts using the estimated velocity.
-
-### Line-of-sight sensing
-
-The camera-like sensor detects the target only if:
-
-```text
-1. the target is within camera range,
-2. the target is not temporarily occluded,
-3. no obstacle blocks the line between robot and target.
-```
-
-This prevents unrealistic sensing through walls.
-
-### A* vs Dijkstra
-
-Both planners use the same grid and obstacle map. Dijkstra expands broadly, while A* uses a goal-directed heuristic. In many cases, A* finds similar path quality while exploring fewer nodes.
-
----
-
-## Limitations
-
-- This is a 2D browser-based simulation, not a physical robot.
-- Obstacles are simplified geometric objects.
-- The sensor is a simulated camera-like measurement model.
-- The robot does not yet use ROS, SLAM, or real motors.
-- Dynamic obstacles are simulated.
-
----
-
-## Future work
-
-- Real camera/OpenCV validation.
-- ROS 2 / Gazebo or Webots implementation.
-- SLAM-based map generation.
-- Multi-target tracking.
-- Crowd-aware navigation.
-- Model predictive control or dynamic-window local planning.
-- Hardware deployment on a mobile robot.
-
----
-
-## Portfolio description
-
-> Built an uncertainty-aware target-following robot simulation using camera-like sensing, a 4-state Kalman filter, A* path planning, Dijkstra comparison, dynamic obstacles, controlled experiments, and failure-case analysis.
-
----
-
-## Tech stack
+## Tech Stack
 
 - HTML
 - CSS
 - JavaScript
 - Canvas API
 
-No external libraries are required.
+---
 
-## Final auto-test dashboard
+## Limitations
 
-This version includes a testing dashboard designed for portfolio evidence collection.
+- The system is a 2D browser-based simulation, not a deployed physical robot.
+- The camera is represented as a simulated sensing model.
+- Obstacles are simplified geometric objects.
+- Dynamic obstacles follow simulated motion rules.
+- The project does not currently include ROS, SLAM, real motors, or hardware deployment.
 
-- Select an exact test case from the Test Assistant.
-- Mark the run as `Testing / practice` or `Final result`.
-- Set the test duration, for example 30 seconds.
-- Click **Run Timed Trial** to automatically start the simulation and recording.
-- The trial stops automatically when the timer finishes.
-- Optional auto-download can export the summary CSV, or the summary plus frame-level CSV.
-- Saved trials are also stored in the browser using `localStorage`, so refreshing the page does not immediately remove the collected trial summaries.
-- The Findings Dashboard compares final trials and generates a README-ready result sentence from real measured values.
+---
 
-Only trials marked as `Final result` should be used for the final README/report. Use `Testing / practice` for debugging or trial runs.
+## Future Work
 
+- Real camera/OpenCV validation.
+- ROS 2, Gazebo, or Webots implementation.
+- SLAM-based map generation.
+- Multi-target tracking.
+- Crowd-aware navigation.
+- Local dynamic-window planning.
+- Hardware deployment on a mobile robot platform.
 
-## Compact Lab UI
+---
 
-This version uses a compact simulation-first layout. The main screen keeps the robot viewport and key findings visible, while the full Results Dashboard opens separately for charts, planner comparisons, experiment tables, failure logs, and README-ready result summaries.
+## Project Summary
 
-
-## No-scroll home dashboard
-
-This version keeps only the essential result snapshot on the main screen so the base findings do not get cut off. Full charts, planner tables, saved trials, failure logs, and final report text are available through the Results Dashboard overlay.
-
-
-## Direct test-case launcher
-
-This version keeps six clickable test cases visible on the main screen. Selecting a case loads the exact robot/target positions, noise, camera range, obstacle density, dynamic obstacle state, and trial name for repeatable testing.
-
-
-## Portfolio-facing UI
-
-This version removes tutorial-style prompts from the interface. The application is presented as a robotics simulation studio with scenario shortcuts, controlled experiment runs, an analytics dashboard, planner comparison, failure analysis, and report-ready findings.
-
-
-## Scenario shortcut fix
-
-Scenario shortcut cards now directly update the Setup and Controls inputs, including robot/target starting positions, sensor noise, camera range, robot speed, obstacle density, dynamic obstacle mode, dynamic obstacle speed, failure scenario, and trial name.
+This project demonstrates an integrated robotics pipeline for target following under uncertainty. It combines perception modeling, Kalman state estimation, obstacle-aware path planning, planner comparison, dynamic replanning, robot motion constraints, quantitative experiment logging, and failure analysis in a browser-based simulation.
