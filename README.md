@@ -159,6 +159,9 @@ The dense obstacle scenario compares A* and Dijkstra planning behavior using exp
 ![Failure analysis](assets/screenshots/failure-case-analysis.png)
 
 The failure dashboard records system limitations such as poor visibility, tracking loss, high error, and robot motion constraints.
+
+---
+
 ### Interpretation
 
 The saved trials show that the system can run target-following experiments under multiple sensing and planning conditions. The line-of-sight blocked cases confirm that the camera model respects obstacle-based visibility constraints. The dense obstacle scenario shows that A* explores fewer nodes than Dijkstra, supporting its use as the main planner. The dynamic obstacle scenario demonstrates that the system can trigger repeated replanning while avoiding collisions.
