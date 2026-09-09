@@ -343,32 +343,3 @@ The simulation is implemented using HTML, CSS, JavaScript, and the Canvas API. N
 
 This project demonstrates an integrated robotics pipeline for target following under uncertainty. It combines perception modeling, Kalman state estimation, obstacle-aware path planning, planner comparison, dynamic replanning, robot motion constraints, quantitative experiment logging, and failure analysis in a browser-based simulation.
 
-
-## Final UI/code fixes
-
-The current interface keeps one scenario shortcut section on the main screen. Scenario selection updates the Setup and Controls values directly. Dashboard graphs refresh when the Analytics Dashboard or graph tabs are opened.
-
-
-## Timer-stop behavior
-
-Timed experiments now stop recording, save the trial, update the dashboard, and pause the simulation when the selected duration ends.
-
-
-## Auto-stop unlock fix
-
-After a timed experiment completes, the app now saves the trial, pauses the simulation, refreshes dashboard data, and returns controls to an unlocked clickable state.
-
-
-## Dashboard open fix
-
-The inline UI script has been cleaned so the Analytics Dashboard button opens reliably. The dashboard also refreshes charts after opening.
-
-
-## Saved-trial graph selection
-
-The Analytics Dashboard includes a Graph Source selector. Graphs can show either the live current simulation history or the frame data from a selected saved experiment/trial. The selected trial name, run type, duration, frame count, RMSE, and detection rate are displayed above the graphs.
-
-
-## Compact dashboard fit
-
-The Analytics Dashboard uses a compact layout so the graph source selector, graph area, and comparison tables fit better at normal 100% browser zoom.
