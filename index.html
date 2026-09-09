@@ -21,7 +21,7 @@
     </div>
 
     <div class="topbar-actions">
-      <button id="openDashboardBtn" type="button" class="ghost-button">Analytics Dashboard</button>
+      <button id="openDashboardBtn" type="button" class="ghost-button" onclick="if(window.forceOpenDashboard){window.forceOpenDashboard();}">Analytics Dashboard</button>
       <button id="startBtn" type="button">Start</button>
       <button id="pauseBtn" type="button" class="secondary-button">Pause</button>
       <button id="resetBtn" type="button" class="secondary-button">Reset</button>
@@ -73,13 +73,21 @@
       <div class="canvas-shell">
         <canvas id="simulationCanvas" width="900" height="500"></canvas>
       </div>
-
+              <div class="timer-card compact-timer-card">
+                <div>
+                  <span>Experiment progress</span>
+                  <strong id="trialCountdown">Not running</strong>
+                </div>
+                <progress id="trialProgressBar" value="0" max="100"></progress>
+                <p id="timedTrialStatus" class="small-note">Select a scenario, choose run type, and start a timed experiment.</p>
+              </div>
       <div class="viewport-hud">
         <div><span>Tracking Error</span><strong id="trackingError">0.00 px</strong></div>
         <div><span>Average Error</span><strong id="averageError">0.00 px</strong></div>
         <div><span>Robot Velocity</span><strong id="robotSpeed">0.00 / 2.80 px/frame</strong></div>
         <div><span>Detection Rate</span><strong id="detectionRate">100%</strong></div>
       </div>
+	  
 
       <section class="main-findings-strip">
         <div class="section-header-inline">
@@ -101,10 +109,6 @@
           <strong id="highNoiseDelta">Waiting</strong>
           <strong id="collisionFinalTotal">0</strong>
         </div>
-        <div class="home-dashboard-hint">
-          <span>Detailed charts, all saved trials, failure logs, and README sentence are inside the Analytics Dashboard.</span>
-          <button type="button" class="secondary-button dashboard-launch-btn">Open Full Dashboard</button>
-        </div>
       </section>
 
       <div class="legend compact-legend">
@@ -125,10 +129,8 @@
     <aside class="inspector-panel" aria-label="Tool inspector side panel">
       <div class="inspector-header">
         <div>
-          <p class="eyebrow dark-eyebrow">Inspector</p>
           <h2>Experiment Console</h2>
         </div>
-        <p class="small-note">Configure scenarios, run controlled trials, and review system performance.</p>
       </div>
 
       <nav class="inspector-quick-nav tabbed-nav" aria-label="Inspector tool panels">
@@ -150,49 +152,6 @@
                 </div>
                 <span id="testLoadStatus" class="test-pill">Ready</span>
               </div>
-
-              <div class="test-case-library">
-                <div class="test-case-library-header">
-                  <div>
-                    <p class="eyebrow dark-eyebrow">Scenario Library</p>
-                    <strong>Select a scenario to load its parameters</strong>
-                  </div>
-                  <span class="test-pill muted-pill">6 fixed cases</span>
-                </div>
-                <div class="test-case-button-grid">
-                  <button type="button" class="test-case-card active" data-test-case="baseline">
-                    <span>01</span>
-                    <strong>Baseline</strong>
-                    <small>Normal reference run</small>
-                  </button>
-                  <button type="button" class="test-case-card" data-test-case="high_noise">
-                    <span>02</span>
-                    <strong>High Noise</strong>
-                    <small>Kalman robustness</small>
-                  </button>
-                  <button type="button" class="test-case-card" data-test-case="line_of_sight_blocked">
-                    <span>03</span>
-                    <strong>LOS Blocked</strong>
-                    <small>Camera cannot see wall</small>
-                  </button>
-                  <button type="button" class="test-case-card" data-test-case="dense_obstacles">
-                    <span>04</span>
-                    <strong>Dense Map</strong>
-                    <small>A* and Dijkstra stress</small>
-                  </button>
-                  <button type="button" class="test-case-card" data-test-case="dynamic_obstacles">
-                    <span>05</span>
-                    <strong>Dynamic Obstacles</strong>
-                    <small>Replanning test</small>
-                  </button>
-                  <button type="button" class="test-case-card" data-test-case="slow_robot">
-                    <span>06</span>
-                    <strong>Slow Robot</strong>
-                    <small>Failure limitation</small>
-                  </button>
-                </div>
-              </div>
-
 
               <label for="testCaseSelect">Select scenario</label>
               <select id="testCaseSelect" name="testCase">
@@ -227,38 +186,9 @@
               </div>
 
               <div class="action-row experiment-button-row compact-action-row">
-                <button id="loadScenariosCaseBtn" type="button">Load Scenario</button>
+                <button id="loadTestCaseBtn" type="button">Load Scenario</button>
                 <button id="runAutomatedTrialBtn" type="button" class="primary-strong-button">Run Timed Experiment</button>
                 <button id="stopTimedTrialBtn" type="button" class="secondary-button">Stop & Save</button>
-              </div>
-
-              <div class="timer-card compact-timer-card">
-                <div>
-                  <span>Experiment progress</span>
-                  <strong id="trialCountdown">Not running</strong>
-                </div>
-                <progress id="trialProgressBar" value="0" max="100"></progress>
-                <p id="timedTrialStatus" class="small-note">Select a scenario, choose run type, and start a timed experiment.</p>
-              </div>
-
-              <div class="test-info-grid">
-                <div class="test-info-card"><span>Scenario</span><strong id="currentScenariosName">baseline</strong></div>
-                <div class="test-info-card"><span>Primary evidence</span><strong id="currentOutputFile">Baseline system response</strong></div>
-              </div>
-
-              <div class="test-purpose-box">
-                <strong>Purpose</strong>
-                <p id="currentReasonText">Normal reference case for comparing all harder tests.</p>
-              </div>
-
-              <div class="test-purpose-box extraction-box">
-                <strong>Key metrics</strong>
-                <p id="currentValuesToExtract">Tracking RMSE, mean tracking error, detection rate, A* planning time, collision count.</p>
-              </div>
-
-              <div class="test-purpose-box expected-box">
-                <strong>Interpretation</strong>
-                <p id="currentExpectedText">The full system works under normal conditions: target acquisition, Kalman estimation, A* path planning, and safe robot following.</p>
               </div>
 
               <div class="test-purpose-box exact-values-box">
@@ -274,12 +204,6 @@
                   <span>Dynamic: Disabled</span>
                   <span>Scenario: Normal baseline</span>
                 </div>
-              </div>
-
-              <div class="floating-callout">
-                <strong>Need full analysis?</strong>
-                <p class="small-note">Click <strong>Analytics Dashboard</strong> for large charts, experiment tables, failure graphs, and the README-ready result sentence.</p>
-                <button type="button" class="secondary-button full-button dashboard-launch-btn">Open Analytics Dashboard</button>
               </div>
             </div>
           </section>
@@ -524,6 +448,25 @@
         <section id="graphsPane" class="dashboard-pane">
           <section id="graphsPanel" class="tool-section always-open">
             <div class="section-body">
+              <div class="graph-source-card">
+                <div>
+                  <p class="eyebrow dark-eyebrow">Graph Source</p>
+                  <h3 id="graphSourceTitle">Live current run</h3>
+                  <p id="graphSourceDescription">These graphs show the currently running simulation history.</p>
+                </div>
+                <div class="graph-source-controls">
+                  <label for="graphSourceSelect">Show graphs from</label>
+                  <select id="graphSourceSelect" name="graphSource">
+                    <option value="live">Live current run</option>
+                    <option value="saved">Saved experiment/trial</option>
+                  </select>
+                  <label for="graphTrialSelect">Saved trial</label>
+                  <select id="graphTrialSelect" name="graphTrial">
+                    <option value="">No saved trial yet</option>
+                  </select>
+                </div>
+              </div>
+
               <div class="mini-tabs" role="tablist" aria-label="Graph panels">
                 <button class="graph-tool-tab active" type="button" data-graph="errorGraphPanel">Error</button>
                 <button class="graph-tool-tab" type="button" data-graph="positionGraphPanel">Position</button>
@@ -532,11 +475,11 @@
                 <button class="graph-tool-tab" type="button" data-graph="followingGraphPanel">Following</button>
               </div>
 
-              <div class="graph-panel active" id="errorGraphPanel"><h3>Tracking Error Over Time</h3><canvas id="errorGraphCanvas" width="900" height="240"></canvas></div>
-              <div class="graph-panel" id="positionGraphPanel"><h3>Target Position vs Robot Position</h3><canvas id="positionGraphCanvas" width="900" height="260"></canvas></div>
-              <div class="graph-panel" id="comparisonGraphPanel"><h3>Estimator RMSE Comparison</h3><canvas id="comparisonGraphCanvas" width="900" height="260"></canvas></div>
-              <div class="graph-panel" id="motionGraphPanel"><h3>Kalman Error Around Sudden Motion Changes</h3><canvas id="motionEventGraphCanvas" width="900" height="260"></canvas></div>
-              <div class="graph-panel" id="followingGraphPanel"><h3>Robot Following Strategy Comparison</h3><canvas id="futurePredictionGraphCanvas" width="900" height="260"></canvas></div>
+              <div class="graph-panel active" id="errorGraphPanel"><h3>Tracking Error Over Time</h3><p class="graph-context-note">Use the Graph Source selector above to switch between live data and saved trials.</p><canvas id="errorGraphCanvas" width="900" height="190"></canvas></div>
+              <div class="graph-panel" id="positionGraphPanel"><h3>Target Position vs Robot Position</h3><p class="graph-context-note">Selected trial/source is shown above.</p><canvas id="positionGraphCanvas" width="900" height="205"></canvas></div>
+              <div class="graph-panel" id="comparisonGraphPanel"><h3>Estimator Behavior</h3><p class="graph-context-note">Saved-trial mode compares sensor measurement error and Kalman estimate error.</p><canvas id="comparisonGraphCanvas" width="900" height="205"></canvas></div>
+              <div class="graph-panel" id="motionGraphPanel"><h3>Prediction / Visibility Behavior</h3><p class="graph-context-note">Saved-trial mode shows prediction error and line-of-sight blocking markers.</p><canvas id="motionEventGraphCanvas" width="900" height="205"></canvas></div>
+              <div class="graph-panel" id="followingGraphPanel"><h3>Robot-Target Distance</h3><p class="graph-context-note">Saved-trial mode shows robot distance from the target over the selected trial.</p><canvas id="futurePredictionGraphCanvas" width="900" height="205"></canvas></div>
 
               <div class="dashboard-two-column">
                 <div>
@@ -624,7 +567,7 @@
           <section class="tool-section always-open">
             <div class="section-body">
               <h3 class="subheading">Experiment Summary</h3>
-              <canvas id="experimentGraphCanvas" width="900" height="260"></canvas>
+              <canvas id="experimentGraphCanvas" width="900" height="205"></canvas>
               <h3 class="subheading">Experiment Results Table</h3>
               <div class="table-scroll">
                 <table class="comparison-table experiment-table">
@@ -671,7 +614,7 @@
                 <button id="exportFailureCsvBtn" type="button" class="secondary-button">Export Failure CSV</button>
               </div>
               <h3 class="subheading">Failure Case Timeline</h3>
-              <canvas id="failureGraphCanvas" width="900" height="240"></canvas>
+              <canvas id="failureGraphCanvas" width="900" height="200"></canvas>
               <h3 class="subheading">Failure Log</h3>
               <div class="table-scroll">
                 <table class="comparison-table failure-table">
@@ -778,11 +721,16 @@
     const dashboardLaunchBtns = document.querySelectorAll('.dashboard-launch-btn');
     const dashboardCloseTargets = document.querySelectorAll('[data-close-dashboard]');
     function openDashboard() {
+      if (!dashboardModal) return;
       dashboardModal.classList.add('open');
       dashboardModal.setAttribute('aria-hidden', 'false');
       document.body.classList.add('modal-open');
+      setTimeout(() => {
+        if (typeof refreshDashboardGraphs === "function") refreshDashboardGraphs();
+      }, 120);
     }
     function closeDashboard() {
+      if (!dashboardModal) return;
       dashboardModal.classList.remove('open');
       dashboardModal.setAttribute('aria-hidden', 'true');
       document.body.classList.remove('modal-open');
@@ -792,7 +740,7 @@
     dashboardLaunchBtns.forEach((btn) => btn.addEventListener('click', openDashboard));
     dashboardCloseTargets.forEach((btn) => btn.addEventListener('click', closeDashboard));
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && dashboardModal.classList.contains('open')) {
+      if (event.key === 'Escape' && dashboardModal && dashboardModal.classList.contains('open')) {
         closeDashboard();
       }
     });
@@ -823,79 +771,10 @@
       observer.observe(astarCompareNodesSource, { childList: true, subtree: true, characterData: true });
     }
 
-/* ---------- Compact UI test-case card helpers ---------- */
-function refreshVisibleScenariosCaseCards() {
-  const select = document.getElementById("testCaseSelect");
-  if (!select) return;
-  const activeValue = select.value;
-  document.querySelectorAll(".test-case-card").forEach((card) => {
-    card.classList.toggle("active", card.dataset.testCase === activeValue);
-  });
-}
-
-function getReadableScenariosCaseValues(caseKey) {
-  const data = {
-    baseline: [
-      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
-      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: Normal baseline"
-    ],
-    high_noise: [
-      "Robot: 120, 430", "Target: 820, 430", "Noise: 70 px", "Range: 700 px",
-      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: High camera noise"
-    ],
-    line_of_sight_blocked: [
-      "Robot: 220, 250", "Target: 600, 250", "Noise: 25 px", "Range: 700 px",
-      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: LOS blocked"
-    ],
-    dense_obstacles: [
-      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
-      "Speed: 2.8 px/frame", "Obstacles: High", "Dynamic: Disabled", "Scenario: Dense planning"
-    ],
-    dynamic_obstacles: [
-      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
-      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Enabled 1.5x", "Scenario: Replanning"
-    ],
-    slow_robot: [
-      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
-      "Speed: 1.2 px/frame", "Obstacles: Medium", "Dynamic: Enabled 1.5x", "Scenario: Slow robot failure"
-    ]
-  };
-  return data[caseKey] || data.baseline;
-}
-
-function updateExactValuesPanel() {
-  const select = document.getElementById("testCaseSelect");
-  const exactPanel = document.getElementById("currentExactValues");
-  if (!select || !exactPanel) return;
-  exactPanel.innerHTML = "";
-  getReadableScenariosCaseValues(select.value).forEach((text) => {
-    const item = document.createElement("span");
-    item.textContent = text;
-    exactPanel.appendChild(item);
-  });
-  refreshVisibleScenariosCaseCards();
-}
-
-document.querySelectorAll(".test-case-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    const select = document.getElementById("testCaseSelect");
-    if (!select) return;
-    select.value = card.dataset.testCase;
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    updateExactValuesPanel();
-    const loadButton = document.getElementById("loadScenariosCaseBtn");
-    if (loadButton) loadButton.click();
-  });
-});
-
-const visibleScenariosSelect = document.getElementById("testCaseSelect");
-if (visibleScenariosSelect) {
-  visibleScenariosSelect.addEventListener("change", updateExactValuesPanel);
-}
-updateExactValuesPanel();
 
 
-/* ---------- Direct scenario shortcut hard-loader fix ---------- */
+
+/* ---------- Single scenario shortcut loader ---------- */
 function setFieldValueAndNotify(id, value) {
   const element = document.getElementById(id);
   if (!element) return;
@@ -907,104 +786,89 @@ function setFieldValueAndNotify(id, value) {
 function getDirectScenarioConfig(caseKey) {
   const cases = {
     baseline: {
-      robotX: 120,
-      robotY: 430,
-      targetX: 820,
-      targetY: 430,
-      noise: 25,
-      range: 700,
-      speed: 2.8,
-      obstacle: "medium",
-      dynamicMode: "disabled",
-      dynamicSpeed: 1.0,
-      failureScenario: "normal",
-      trialName: "baseline",
+      robotX: 120, robotY: 430, targetX: 820, targetY: 430,
+      noise: 25, range: 700, speed: 2.8,
+      obstacle: "medium", dynamicMode: "disabled", dynamicSpeed: 1.0,
+      failureScenario: "normal", trialName: "baseline",
       evidence: "Baseline system response"
     },
     high_noise: {
-      robotX: 120,
-      robotY: 430,
-      targetX: 820,
-      targetY: 430,
-      noise: 70,
-      range: 700,
-      speed: 2.8,
-      obstacle: "medium",
-      dynamicMode: "disabled",
-      dynamicSpeed: 1.0,
-      failureScenario: "highNoise",
-      trialName: "high_noise",
+      robotX: 120, robotY: 430, targetX: 820, targetY: 430,
+      noise: 70, range: 700, speed: 2.8,
+      obstacle: "medium", dynamicMode: "disabled", dynamicSpeed: 1.0,
+      failureScenario: "highNoise", trialName: "high_noise",
       evidence: "High-noise estimator response"
     },
     line_of_sight_blocked: {
-      robotX: 220,
-      robotY: 250,
-      targetX: 600,
-      targetY: 250,
-      noise: 25,
-      range: 700,
-      speed: 2.8,
-      obstacle: "medium",
-      dynamicMode: "disabled",
-      dynamicSpeed: 1.0,
-      failureScenario: "hiddenStart",
-      trialName: "line_of_sight_blocked",
+      robotX: 220, robotY: 250, targetX: 600, targetY: 250,
+      noise: 25, range: 700, speed: 2.8,
+      obstacle: "medium", dynamicMode: "disabled", dynamicSpeed: 1.0,
+      failureScenario: "hiddenStart", trialName: "line_of_sight_blocked",
       evidence: "Line-of-sight blocking response"
     },
     dense_obstacles: {
-      robotX: 120,
-      robotY: 430,
-      targetX: 820,
-      targetY: 430,
-      noise: 25,
-      range: 700,
-      speed: 2.8,
-      obstacle: "high",
-      dynamicMode: "disabled",
-      dynamicSpeed: 1.0,
-      failureScenario: "plannerStress",
-      trialName: "dense_obstacles",
+      robotX: 120, robotY: 430, targetX: 820, targetY: 430,
+      noise: 25, range: 700, speed: 2.8,
+      obstacle: "high", dynamicMode: "disabled", dynamicSpeed: 1.0,
+      failureScenario: "plannerStress", trialName: "dense_obstacles",
       evidence: "Dense-map planner response"
     },
     dynamic_obstacles: {
-      robotX: 120,
-      robotY: 430,
-      targetX: 820,
-      targetY: 430,
-      noise: 25,
-      range: 700,
-      speed: 2.8,
-      obstacle: "medium",
-      dynamicMode: "enabled",
-      dynamicSpeed: 1.5,
-      failureScenario: "normal",
-      trialName: "dynamic_obstacles",
+      robotX: 120, robotY: 430, targetX: 820, targetY: 430,
+      noise: 25, range: 700, speed: 2.8,
+      obstacle: "medium", dynamicMode: "enabled", dynamicSpeed: 1.5,
+      failureScenario: "normal", trialName: "dynamic_obstacles",
       evidence: "Dynamic replanning response"
     },
     slow_robot: {
-      robotX: 120,
-      robotY: 430,
-      targetX: 820,
-      targetY: 430,
-      noise: 25,
-      range: 700,
-      speed: 1.2,
-      obstacle: "medium",
-      dynamicMode: "enabled",
-      dynamicSpeed: 1.5,
-      failureScenario: "slowRobot",
-      trialName: "slow_robot",
+      robotX: 120, robotY: 430, targetX: 820, targetY: 430,
+      noise: 25, range: 700, speed: 1.2,
+      obstacle: "medium", dynamicMode: "enabled", dynamicSpeed: 1.5,
+      failureScenario: "slowRobot", trialName: "slow_robot",
       evidence: "Control-limit failure response"
     }
   };
   return cases[caseKey] || cases.baseline;
 }
 
-function applyDirectScenarioToVisibleControls(caseKey) {
-  const config = getDirectScenarioConfig(caseKey);
+function getReadableScenarioValues(caseKey) {
+  const cfg = getDirectScenarioConfig(caseKey);
+  const obstacleLabel = cfg.obstacle.charAt(0).toUpperCase() + cfg.obstacle.slice(1);
+  const dynamicLabel = cfg.dynamicMode === "enabled" ? `Enabled ${cfg.dynamicSpeed}x` : "Disabled";
+  return [
+    `Robot: ${cfg.robotX}, ${cfg.robotY}`,
+    `Target: ${cfg.targetX}, ${cfg.targetY}`,
+    `Noise: ${cfg.noise} px`,
+    `Range: ${cfg.range} px`,
+    `Speed: ${cfg.speed} px/frame`,
+    `Obstacles: ${obstacleLabel}`,
+    `Dynamic: ${dynamicLabel}`,
+    `Run: ${cfg.trialName}`
+  ];
+}
 
+function refreshScenarioCards(caseKey) {
+  document.querySelectorAll(".test-case-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.testCase === caseKey);
+  });
+}
+
+function updateExactScenarioValues(caseKey) {
+  const exactPanel = document.getElementById("currentExactValues");
+  if (!exactPanel) return;
+  exactPanel.innerHTML = "";
+  getReadableScenarioValues(caseKey).forEach((text) => {
+    const item = document.createElement("span");
+    item.textContent = text;
+    exactPanel.appendChild(item);
+  });
+}
+
+function applyScenario(caseKey, options = {}) {
+  const config = getDirectScenarioConfig(caseKey);
   const testCaseSelectEl = document.getElementById("testCaseSelect");
   if (testCaseSelectEl) testCaseSelectEl.value = caseKey;
+
   setFieldValueAndNotify("robotStartXInput", config.robotX);
   setFieldValueAndNotify("robotStartYInput", config.robotY);
   setFieldValueAndNotify("targetStartXInput", config.targetX);
@@ -1018,50 +882,621 @@ function applyDirectScenarioToVisibleControls(caseKey) {
   setFieldValueAndNotify("failureScenarioSelect", config.failureScenario);
   setFieldValueAndNotify("experimentNameInput", config.trialName);
 
+  const nameElement = document.getElementById("currentTestName");
+  if (nameElement) nameElement.textContent = config.trialName;
+
   const evidenceElement = document.getElementById("currentScreenshotFile");
   if (evidenceElement) evidenceElement.textContent = config.evidence;
 
-  if (typeof updateExactValuesPanel === "function") {
-    updateExactValuesPanel();
-  }
-  if (typeof refreshVisibleTestCaseCards === "function") {
-    refreshVisibleTestCaseCards();
-  }
+  updateExactScenarioValues(caseKey);
+  refreshScenarioCards(caseKey);
 
   const applyButton = document.getElementById("applyStartPositionsBtn");
-  if (applyButton) applyButton.click();
+  if (applyButton && !options.skipApplyPositions) {
+    applyButton.click();
+  }
 
   const loadStatus = document.getElementById("testLoadStatus");
   if (loadStatus) {
     loadStatus.textContent = "Loaded";
     setTimeout(() => {
       loadStatus.textContent = "Ready";
-    }, 1200);
+    }, 1000);
   }
 }
 
 document.querySelectorAll(".test-case-card").forEach((card) => {
-  card.addEventListener("click", () => {
-    applyDirectScenarioToVisibleControls(card.dataset.testCase);
+  card.addEventListener("click", () => applyScenario(card.dataset.testCase));
+});
+
+const scenarioSelect = document.getElementById("testCaseSelect");
+if (scenarioSelect) {
+  scenarioSelect.addEventListener("change", () => applyScenario(scenarioSelect.value));
+}
+
+const loadScenarioButton = document.getElementById("loadTestCaseBtn");
+if (loadScenarioButton) {
+  loadScenarioButton.addEventListener("click", () => {
+    const select = document.getElementById("testCaseSelect");
+    applyScenario(select ? select.value : "baseline");
+  });
+}
+
+applyScenario("baseline", { skipApplyPositions: true });
+
+/* ---------- Dashboard graph refresh fix ---------- */
+function refreshDashboardGraphs() {
+  const tasks = [
+    () => { if (typeof drawErrorGraph === "function") drawErrorGraph(); },
+    () => { if (typeof drawPositionGraph === "function") drawPositionGraph(); },
+    () => { if (typeof drawComparisonGraph === "function") drawComparisonGraph(); },
+    () => { if (typeof drawMotionEventGraph === "function") drawMotionEventGraph(); },
+    () => { if (typeof drawFuturePredictionGraph === "function") drawFuturePredictionGraph(); },
+    () => { if (typeof drawExperimentGraph === "function") drawExperimentGraph(); },
+    () => { if (typeof drawFailureGraph === "function") drawFailureGraph(); },
+    () => { if (typeof updateFindingsDashboard === "function") updateFindingsDashboard(); },
+    () => { if (typeof updateExperimentDisplay === "function") updateExperimentDisplay(); },
+    () => { if (typeof updateFailureDisplay === "function") updateFailureDisplay(); }
+  ];
+
+  tasks.forEach((task) => {
+    try { task(); } catch (error) { console.warn("Dashboard refresh skipped:", error); }
+  });
+}
+
+document.querySelectorAll(".dashboard-tab, .graph-tool-tab").forEach((button) => {
+  button.addEventListener("click", () => {
+    setTimeout(refreshDashboardGraphs, 80);
+    setTimeout(refreshDashboardGraphs, 220);
   });
 });
 
-const scenarioSelectFix = document.getElementById("testCaseSelect");
-if (scenarioSelectFix) {
-  scenarioSelectFix.addEventListener("change", () => {
-    applyDirectScenarioToVisibleControls(scenarioSelectFix.value);
+const originalOpenDashboardButtons = document.querySelectorAll("#openDashboardBtn, .dashboard-launch-btn");
+originalOpenDashboardButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    setTimeout(refreshDashboardGraphs, 100);
+    setTimeout(refreshDashboardGraphs, 300);
+  });
+});
+
+
+/* ---------- Robust dashboard open fallback ---------- */
+window.forceOpenDashboard = function () {
+  const modal = document.getElementById("dashboardModal");
+  if (!modal) return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+  setTimeout(() => {
+    if (typeof refreshDashboardGraphs === "function") {
+      refreshDashboardGraphs();
+    }
+  }, 120);
+};
+
+window.forceCloseDashboard = function () {
+  const modal = document.getElementById("dashboardModal");
+  if (!modal) return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+};
+
+
+/* ---------- Saved-trial graph selector and renderer ---------- */
+const liveGraphDrawers = {
+  drawErrorGraph: typeof drawErrorGraph === "function" ? drawErrorGraph : null,
+  drawPositionGraph: typeof drawPositionGraph === "function" ? drawPositionGraph : null,
+  drawComparisonGraph: typeof drawComparisonGraph === "function" ? drawComparisonGraph : null,
+  drawMotionEventGraph: typeof drawMotionEventGraph === "function" ? drawMotionEventGraph : null,
+  drawFuturePredictionGraph: typeof drawFuturePredictionGraph === "function" ? drawFuturePredictionGraph : null,
+  drawExperimentGraph: typeof drawExperimentGraph === "function" ? drawExperimentGraph : null
+};
+
+const graphSourceSelect = document.getElementById("graphSourceSelect");
+const graphTrialSelect = document.getElementById("graphTrialSelect");
+const graphSourceTitle = document.getElementById("graphSourceTitle");
+const graphSourceDescription = document.getElementById("graphSourceDescription");
+
+function getTrialUniqueKey(trial, index) {
+  return `${trial.startedAt || "unknown"}||${trial.trialName || "trial"}||${index}`;
+}
+
+function getSelectedGraphMode() {
+  return graphSourceSelect ? graphSourceSelect.value : "live";
+}
+
+function getSelectedGraphTrial() {
+  if (!experimentRecorder || !experimentRecorder.trials || experimentRecorder.trials.length === 0) {
+    return null;
+  }
+
+  const selectedKey = graphTrialSelect ? graphTrialSelect.value : "";
+  if (selectedKey) {
+    for (let i = 0; i < experimentRecorder.trials.length; i++) {
+      if (getTrialUniqueKey(experimentRecorder.trials[i], i) === selectedKey) {
+        return { trial: experimentRecorder.trials[i], index: i, key: selectedKey };
+      }
+    }
+  }
+
+  const index = experimentRecorder.trials.length - 1;
+  return {
+    trial: experimentRecorder.trials[index],
+    index,
+    key: getTrialUniqueKey(experimentRecorder.trials[index], index)
+  };
+}
+
+function getRowsForGraphTrial(selection) {
+  if (!selection || !selection.trial || !Array.isArray(experimentRecorder.savedFrameRows)) {
+    return [];
+  }
+
+  const trial = selection.trial;
+  return experimentRecorder.savedFrameRows.filter((row) => {
+    return row.trialName === trial.trialName &&
+      row.startedAt === trial.startedAt &&
+      (row.trialMode || "testing") === (trial.trialMode || "testing");
   });
 }
 
+function refreshGraphTrialSelect() {
+  if (!graphTrialSelect || !experimentRecorder || !Array.isArray(experimentRecorder.trials)) return;
 
-/* Make Load Scenario button also update visible Setup/Controls values */
-const loadScenarioButtonFix = document.getElementById("loadTestCaseBtn");
-if (loadScenarioButtonFix) {
-  loadScenarioButtonFix.addEventListener("click", () => {
-    const select = document.getElementById("testCaseSelect");
-    if (select) applyDirectScenarioToVisibleControls(select.value);
-  }, true);
+  const previous = graphTrialSelect.value;
+  graphTrialSelect.innerHTML = "";
+
+  if (experimentRecorder.trials.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No saved trial yet";
+    graphTrialSelect.appendChild(option);
+    graphTrialSelect.disabled = true;
+    updateGraphSourceLabel();
+    return;
+  }
+
+  experimentRecorder.trials.forEach((trial, index) => {
+    const option = document.createElement("option");
+    option.value = getTrialUniqueKey(trial, index);
+    const mode = (trial.trialMode || "testing").toUpperCase();
+    option.textContent = `${mode} · ${trial.trialNumber}. ${trial.trialName} · RMSE ${Number(trial.trackingRmse || 0).toFixed(2)} px`;
+    graphTrialSelect.appendChild(option);
+  });
+
+  graphTrialSelect.disabled = false;
+
+  const values = Array.from(graphTrialSelect.options).map((option) => option.value);
+  graphTrialSelect.value = values.includes(previous) ? previous : values[values.length - 1];
+
+  updateGraphSourceLabel();
 }
+
+function updateGraphSourceLabel() {
+  if (!graphSourceTitle || !graphSourceDescription) return;
+
+  if (getSelectedGraphMode() === "live") {
+    graphSourceTitle.textContent = "Live current run";
+    graphSourceDescription.textContent = "Graphs show the current simulation history. After saving a timed experiment, switch to Saved experiment/trial to inspect that specific run.";
+    return;
+  }
+
+  const selection = getSelectedGraphTrial();
+  if (!selection || !selection.trial) {
+    graphSourceTitle.textContent = "Saved trial";
+    graphSourceDescription.textContent = "No saved trial is available yet. Run and save an experiment first.";
+    return;
+  }
+
+  const trial = selection.trial;
+  const rows = getRowsForGraphTrial(selection);
+  graphSourceTitle.textContent = `${(trial.trialMode || "testing").toUpperCase()} · ${trial.trialName}`;
+  graphSourceDescription.textContent =
+    `Showing saved frames from trial ${trial.trialNumber}. Duration ${Number(trial.durationSeconds || 0).toFixed(1)}s, ${rows.length} frames, RMSE ${Number(trial.trackingRmse || 0).toFixed(2)} px, detection ${Number(trial.detectionRate || 0).toFixed(1)}%.`;
+}
+
+function toNumberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function distanceFromFields(row, ax, ay, bx, by) {
+  const x1 = toNumberOrNull(row[ax]);
+  const y1 = toNumberOrNull(row[ay]);
+  const x2 = toNumberOrNull(row[bx]);
+  const y2 = toNumberOrNull(row[by]);
+  if (x1 === null || y1 === null || x2 === null || y2 === null) return null;
+  return Math.hypot(x1 - x2, y1 - y2);
+}
+
+function clearSavedGraph(ctx, canvas, title, subtitle = "") {
+  if (!ctx || !canvas) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = "#d7e1ef";
+  ctx.lineWidth = 1;
+  for (let x = 50; x < canvas.width; x += 50) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 40; y < canvas.height; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#334155";
+  ctx.font = "13px Arial";
+  ctx.fillText(title, 12, 18);
+
+  if (subtitle) {
+    ctx.fillStyle = "#64748b";
+    ctx.font = "11px Arial";
+    ctx.fillText(subtitle, 12, 35);
+  }
+}
+
+function drawSavedMessage(ctx, canvas, message) {
+  clearSavedGraph(ctx, canvas, "Saved-trial graph", "");
+  ctx.fillStyle = "#64748b";
+  ctx.font = "14px Arial";
+  ctx.fillText(message, 24, 68);
+}
+
+function drawSavedLegend(ctx, series) {
+  let x = 18;
+  const y = 52;
+  series.forEach((item) => {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(x, y - 8, 18, 3);
+    ctx.fillStyle = "#334155";
+    ctx.font = "11px Arial";
+    ctx.fillText(item.label, x + 24, y - 4);
+    x += Math.max(110, item.label.length * 7 + 42);
+  });
+}
+
+function drawSavedLineChart(ctx, canvas, rows, series, options = {}) {
+  const title = options.title || "Saved trial graph";
+  const subtitle = options.subtitle || "";
+  clearSavedGraph(ctx, canvas, title, subtitle);
+
+  if (!rows || rows.length < 2) {
+    drawSavedMessage(ctx, canvas, "Run and save a trial first, then select it here.");
+    return;
+  }
+
+  const left = 54;
+  const right = 18;
+  const top = 66;
+  const bottom = canvas.height - 32;
+  const width = canvas.width - left - right;
+  const height = bottom - top;
+
+  const values = [];
+  series.forEach((item) => {
+    item.values.forEach((value) => {
+      if (Number.isFinite(value)) values.push(value);
+    });
+  });
+
+  const maxValue = Math.max(...values, options.minMax || 1);
+  const minValue = options.forceZero === false ? Math.min(...values, 0) : 0;
+  const span = Math.max(maxValue - minValue, 1);
+
+  ctx.strokeStyle = "#94a3b8";
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, bottom);
+  ctx.lineTo(canvas.width - right, bottom);
+  ctx.stroke();
+
+  ctx.fillStyle = "#64748b";
+  ctx.font = "11px Arial";
+  ctx.fillText(`${maxValue.toFixed(1)}`, 12, top + 4);
+  ctx.fillText(`${minValue.toFixed(1)}`, 18, bottom + 3);
+  ctx.fillText("time →", canvas.width - 68, canvas.height - 10);
+
+  drawSavedLegend(ctx, series);
+
+  series.forEach((item) => {
+    ctx.beginPath();
+    ctx.strokeStyle = item.color;
+    ctx.lineWidth = 2;
+
+    let started = false;
+    item.values.forEach((value, index) => {
+      if (!Number.isFinite(value)) {
+        started = false;
+        return;
+      }
+
+      const x = left + (index / Math.max(item.values.length - 1, 1)) * width;
+      const y = bottom - ((value - minValue) / span) * height;
+
+      if (!started) {
+        ctx.moveTo(x, y);
+        started = true;
+      } else {
+        ctx.lineTo(x, y);
+      }
+    });
+
+    ctx.stroke();
+  });
+
+  if (options.markerKey) {
+    rows.forEach((row, index) => {
+      if (Number(row[options.markerKey]) !== 1) return;
+      const x = left + (index / Math.max(rows.length - 1, 1)) * width;
+      ctx.strokeStyle = "rgba(220, 38, 38, 0.45)";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    });
+  }
+}
+
+function getSavedGraphRowsOrMessage(ctx, canvas) {
+  const selection = getSelectedGraphTrial();
+  const rows = getRowsForGraphTrial(selection);
+
+  if (!selection || !selection.trial || rows.length < 2) {
+    drawSavedMessage(ctx, canvas, "No saved frame data for the selected trial.");
+    return null;
+  }
+
+  updateGraphSourceLabel();
+  return { selection, rows };
+}
+
+function drawSavedErrorGraph() {
+  const data = getSavedGraphRowsOrMessage(errorGraphCtx, errorGraphCanvas);
+  if (!data) return;
+  const values = data.rows.map((row) => toNumberOrNull(row.trackingError));
+  drawSavedLineChart(errorGraphCtx, errorGraphCanvas, data.rows, [
+    { label: "Tracking error", color: "#2563eb", values }
+  ], {
+    title: "Saved trial: tracking error",
+    subtitle: `${data.selection.trial.trialName} · lower is better`,
+    minMax: 50
+  });
+}
+
+function drawSavedPositionGraph() {
+  const data = getSavedGraphRowsOrMessage(positionGraphCtx, positionGraphCanvas);
+  if (!data) return;
+  drawSavedLineChart(positionGraphCtx, positionGraphCanvas, data.rows, [
+    { label: "Target X", color: "#ef4444", values: data.rows.map((row) => toNumberOrNull(row.targetX)) },
+    { label: "Robot X", color: "#2563eb", values: data.rows.map((row) => toNumberOrNull(row.robotX)) },
+    { label: "Target Y", color: "#f97316", values: data.rows.map((row) => toNumberOrNull(row.targetY)) },
+    { label: "Robot Y", color: "#16a34a", values: data.rows.map((row) => toNumberOrNull(row.robotY)) }
+  ], {
+    title: "Saved trial: target and robot positions",
+    subtitle: data.selection.trial.trialName,
+    minMax: 900
+  });
+}
+
+function drawSavedEstimatorGraph() {
+  const data = getSavedGraphRowsOrMessage(comparisonGraphCtx, comparisonGraphCanvas);
+  if (!data) return;
+
+  const sensorError = data.rows.map((row) => distanceFromFields(row, "sensorX", "sensorY", "targetX", "targetY"));
+  const kalmanError = data.rows.map((row) => distanceFromFields(row, "estimateX", "estimateY", "targetX", "targetY"));
+
+  drawSavedLineChart(comparisonGraphCtx, comparisonGraphCanvas, data.rows, [
+    { label: "Sensor measurement error", color: "#f97316", values: sensorError },
+    { label: "Kalman estimate error", color: "#7c3aed", values: kalmanError }
+  ], {
+    title: "Saved trial: sensor vs Kalman error",
+    subtitle: `${data.selection.trial.trialName} · compares noisy measurement with filtered estimate`,
+    minMax: 40
+  });
+}
+
+function drawSavedPredictionGraph() {
+  const data = getSavedGraphRowsOrMessage(motionEventGraphCtx, motionEventGraphCanvas);
+  if (!data) return;
+
+  const predictionErrorValues = data.rows.map((row) => toNumberOrNull(row.predictionError));
+  const trackingErrorValues = data.rows.map((row) => toNumberOrNull(row.trackingError));
+
+  drawSavedLineChart(motionEventGraphCtx, motionEventGraphCanvas, data.rows, [
+    { label: "Prediction error", color: "#7c3aed", values: predictionErrorValues },
+    { label: "Tracking error", color: "#2563eb", values: trackingErrorValues }
+  ], {
+    title: "Saved trial: prediction and visibility behavior",
+    subtitle: "Red vertical markers show line-of-sight blocking frames",
+    markerKey: "lineOfSightBlocked",
+    minMax: 50
+  });
+}
+
+function drawSavedFollowingGraph() {
+  const data = getSavedGraphRowsOrMessage(futurePredictionGraphCtx, futurePredictionGraphCanvas);
+  if (!data) return;
+
+  const distanceValues = data.rows.map((row) => distanceFromFields(row, "robotX", "robotY", "targetX", "targetY"));
+  drawSavedLineChart(futurePredictionGraphCtx, futurePredictionGraphCanvas, data.rows, [
+    { label: "Robot-target distance", color: "#06b6d4", values: distanceValues }
+  ], {
+    title: "Saved trial: robot-target distance",
+    subtitle: `${data.selection.trial.trialName} · shows following distance over the run`,
+    minMax: 100
+  });
+}
+
+function drawSelectedExperimentSummaryGraph() {
+  if (getSelectedGraphMode() !== "saved") {
+    if (liveGraphDrawers.drawExperimentGraph) liveGraphDrawers.drawExperimentGraph();
+    return;
+  }
+
+  const trials = typeof getFilteredDashboardTrials === "function" ? getFilteredDashboardTrials() : experimentRecorder.trials;
+  if (!experimentGraphCtx || !experimentGraphCanvas) return;
+  clearSavedGraph(experimentGraphCtx, experimentGraphCanvas, "Saved trials: RMSE comparison", "Uses the dashboard Results view filter.");
+
+  if (!trials || trials.length === 0) {
+    drawSavedMessage(experimentGraphCtx, experimentGraphCanvas, "No saved trials for this dashboard filter.");
+    return;
+  }
+
+  const maxValue = Math.max(...trials.map((trial) => Math.max(Number(trial.trackingRmse || 0), Number(trial.meanTrackingError || 0))), 1);
+  const left = 56;
+  const bottom = experimentGraphCanvas.height - 44;
+  const top = 62;
+  const height = bottom - top;
+  const groupWidth = Math.max(82, (experimentGraphCanvas.width - left - 26) / trials.length);
+  const barWidth = Math.min(26, groupWidth / 4);
+
+  experimentGraphCtx.strokeStyle = "#94a3b8";
+  experimentGraphCtx.beginPath();
+  experimentGraphCtx.moveTo(left, top);
+  experimentGraphCtx.lineTo(left, bottom);
+  experimentGraphCtx.lineTo(experimentGraphCanvas.width - 20, bottom);
+  experimentGraphCtx.stroke();
+
+  drawSavedLegend(experimentGraphCtx, [
+    { label: "Tracking RMSE", color: "#2563eb", values: [] },
+    { label: "Mean error", color: "#16a34a", values: [] }
+  ]);
+
+  trials.forEach((trial, index) => {
+    const x = left + index * groupWidth + 24;
+    const rmseHeight = (Number(trial.trackingRmse || 0) / maxValue) * height;
+    const meanHeight = (Number(trial.meanTrackingError || 0) / maxValue) * height;
+
+    experimentGraphCtx.fillStyle = "#2563eb";
+    experimentGraphCtx.fillRect(x, bottom - rmseHeight, barWidth, rmseHeight);
+    experimentGraphCtx.fillStyle = "#16a34a";
+    experimentGraphCtx.fillRect(x + barWidth + 5, bottom - meanHeight, barWidth, meanHeight);
+
+    experimentGraphCtx.fillStyle = "#334155";
+    experimentGraphCtx.font = "10px Arial";
+    const label = (trial.trialName || `T${trial.trialNumber}`).slice(0, 12);
+    experimentGraphCtx.save();
+    experimentGraphCtx.translate(x - 3, bottom + 12);
+    experimentGraphCtx.rotate(-0.35);
+    experimentGraphCtx.fillText(label, 0, 0);
+    experimentGraphCtx.restore();
+  });
+}
+
+function drawGraphsForSelectedSource() {
+  updateGraphSourceLabel();
+
+  if (getSelectedGraphMode() === "live") {
+    if (liveGraphDrawers.drawErrorGraph) liveGraphDrawers.drawErrorGraph();
+    if (liveGraphDrawers.drawPositionGraph) liveGraphDrawers.drawPositionGraph();
+    if (liveGraphDrawers.drawComparisonGraph) liveGraphDrawers.drawComparisonGraph();
+    if (liveGraphDrawers.drawMotionEventGraph) liveGraphDrawers.drawMotionEventGraph();
+    if (liveGraphDrawers.drawFuturePredictionGraph) liveGraphDrawers.drawFuturePredictionGraph();
+    if (liveGraphDrawers.drawExperimentGraph) liveGraphDrawers.drawExperimentGraph();
+    return;
+  }
+
+  drawSavedErrorGraph();
+  drawSavedPositionGraph();
+  drawSavedEstimatorGraph();
+  drawSavedPredictionGraph();
+  drawSavedFollowingGraph();
+  drawSelectedExperimentSummaryGraph();
+}
+
+/* Override graph draw calls so the dashboard can show either live data or a selected saved trial. */
+drawErrorGraph = function () {
+  if (getSelectedGraphMode() === "saved") return drawSavedErrorGraph();
+  if (liveGraphDrawers.drawErrorGraph) return liveGraphDrawers.drawErrorGraph();
+};
+
+drawPositionGraph = function () {
+  if (getSelectedGraphMode() === "saved") return drawSavedPositionGraph();
+  if (liveGraphDrawers.drawPositionGraph) return liveGraphDrawers.drawPositionGraph();
+};
+
+drawComparisonGraph = function () {
+  if (getSelectedGraphMode() === "saved") return drawSavedEstimatorGraph();
+  if (liveGraphDrawers.drawComparisonGraph) return liveGraphDrawers.drawComparisonGraph();
+};
+
+drawMotionEventGraph = function () {
+  if (getSelectedGraphMode() === "saved") return drawSavedPredictionGraph();
+  if (liveGraphDrawers.drawMotionEventGraph) return liveGraphDrawers.drawMotionEventGraph();
+};
+
+drawFuturePredictionGraph = function () {
+  if (getSelectedGraphMode() === "saved") return drawSavedFollowingGraph();
+  if (liveGraphDrawers.drawFuturePredictionGraph) return liveGraphDrawers.drawFuturePredictionGraph();
+};
+
+drawExperimentGraph = function () {
+  return drawSelectedExperimentSummaryGraph();
+};
+
+if (graphSourceSelect) {
+  graphSourceSelect.addEventListener("change", () => {
+    updateGraphSourceLabel();
+    drawGraphsForSelectedSource();
+  });
+}
+
+if (graphTrialSelect) {
+  graphTrialSelect.addEventListener("change", () => {
+    if (graphSourceSelect) graphSourceSelect.value = "saved";
+    updateGraphSourceLabel();
+    drawGraphsForSelectedSource();
+  });
+}
+
+if (typeof updateExperimentDisplay === "function") {
+  const originalUpdateExperimentDisplayForGraphSelector = updateExperimentDisplay;
+  updateExperimentDisplay = function () {
+    originalUpdateExperimentDisplayForGraphSelector();
+    refreshGraphTrialSelect();
+  };
+}
+
+if (typeof updateFindingsDashboard === "function") {
+  const originalUpdateFindingsForGraphSelector = updateFindingsDashboard;
+  updateFindingsDashboard = function () {
+    originalUpdateFindingsForGraphSelector();
+    refreshGraphTrialSelect();
+    updateGraphSourceLabel();
+  };
+}
+
+if (typeof stopAndSaveExperimentRecording === "function") {
+  const originalStopAndSaveForGraphSelector = stopAndSaveExperimentRecording;
+  stopAndSaveExperimentRecording = function () {
+    originalStopAndSaveForGraphSelector();
+    refreshGraphTrialSelect();
+    if (graphSourceSelect && experimentRecorder.trials.length > 0) {
+      graphSourceSelect.value = "saved";
+    }
+    updateGraphSourceLabel();
+    setTimeout(drawGraphsForSelectedSource, 120);
+  };
+}
+
+const previousRefreshDashboardGraphs = typeof refreshDashboardGraphs === "function" ? refreshDashboardGraphs : null;
+refreshDashboardGraphs = function () {
+  if (previousRefreshDashboardGraphs) previousRefreshDashboardGraphs();
+  refreshGraphTrialSelect();
+  drawGraphsForSelectedSource();
+};
+
+refreshGraphTrialSelect();
+updateGraphSourceLabel();
 
   </script>
 </body>
