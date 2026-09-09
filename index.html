@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uncertainty-Aware Autonomous Target-Following Robot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="studio-topbar">
+    <div class="brand-block">
+      <p class="eyebrow">Robotics Simulation Studio</p>
+      <h1>Uncertainty-Aware Target-Following Robot</h1>
+    </div>
+
+    <div class="topbar-status-strip">
+      <span>Acquisition: <strong id="targetAcquisitionStatus" class="status-lost">Searching</strong></span>
+      <span>Detection: <strong id="detectionStatus" class="status-lost">Not Acquired</strong></span>
+      <span>LOS: <strong id="lineOfSightStatus" class="status-detected">Clear</strong></span>
+      <span>Health: <strong id="systemHealthStatus" class="status-detected">Healthy</strong></span>
+    </div>
+
+    <div class="topbar-actions">
+      <button id="openDashboardBtn" type="button" class="ghost-button">Analytics Dashboard</button>
+      <button id="startBtn" type="button">Start</button>
+      <button id="pauseBtn" type="button" class="secondary-button">Pause</button>
+      <button id="resetBtn" type="button" class="secondary-button">Reset</button>
+    </div>
+  </header>
+
+  <main class="studio-shell">
+    <section class="viewport-panel" aria-label="Main robot demo">
+      <div class="viewport-title-row">
+        <div>
+          <h2>Main Robot Demo</h2>
+          <p>Main simulation stays visible. Use the inspector to run tests, and open the dashboard for full-size results.</p>
+        </div>
+        <div class="badge-row">
+          <span class="badge">Camera</span>
+          <span class="badge">Kalman</span>
+          <span class="badge">A*</span>
+          <span class="badge">Dynamic Obstacles</span>
+        </div>
+      </div>
+
+      <section class="main-direct-test-strip" aria-label="Direct test case launcher">
+        <div class="direct-test-title">
+          <span>Scenario Shortcuts</span>
+          <small>Click a scenario → parameters load automatically</small>
+        </div>
+        <div class="direct-test-buttons">
+          <button type="button" class="test-case-card direct-test-card active" data-test-case="baseline">
+            <span>01</span><strong>Baseline</strong><small>Normal</small>
+          </button>
+          <button type="button" class="test-case-card direct-test-card" data-test-case="high_noise">
+            <span>02</span><strong>High Noise</strong><small>Kalman</small>
+          </button>
+          <button type="button" class="test-case-card direct-test-card" data-test-case="line_of_sight_blocked">
+            <span>03</span><strong>LOS Blocked</strong><small>Camera</small>
+          </button>
+          <button type="button" class="test-case-card direct-test-card" data-test-case="dense_obstacles">
+            <span>04</span><strong>Dense Map</strong><small>Planner</small>
+          </button>
+          <button type="button" class="test-case-card direct-test-card" data-test-case="dynamic_obstacles">
+            <span>05</span><strong>Dynamic</strong><small>Replan</small>
+          </button>
+          <button type="button" class="test-case-card direct-test-card" data-test-case="slow_robot">
+            <span>06</span><strong>Slow Robot</strong><small>Failure</small>
+          </button>
+        </div>
+      </section>
+
+      <div class="canvas-shell">
+        <canvas id="simulationCanvas" width="900" height="500"></canvas>
+      </div>
+
+      <div class="viewport-hud">
+        <div><span>Tracking Error</span><strong id="trackingError">0.00 px</strong></div>
+        <div><span>Average Error</span><strong id="averageError">0.00 px</strong></div>
+        <div><span>Robot Velocity</span><strong id="robotSpeed">0.00 / 2.80 px/frame</strong></div>
+        <div><span>Detection Rate</span><strong id="detectionRate">100%</strong></div>
+      </div>
+
+      <section class="main-findings-strip">
+        <div class="section-header-inline">
+          <div>
+            <p class="eyebrow dark-eyebrow">Performance Snapshot</p>
+            <h3>Key performance snapshot</h3>
+          </div>
+          <span id="resultReadinessStatus" class="test-pill muted-pill">No trials yet</span>
+        </div>
+        <div class="findings-grid main-findings-grid home-kpi-grid">
+          <div class="finding-card home-kpi-card"><span>Live RMSE</span><strong id="liveRmseFinding">0.00 px</strong></div>
+          <div class="finding-card home-kpi-card"><span>Detection</span><strong id="liveDetectionFinding">100%</strong></div>
+          <div class="finding-card home-kpi-card wide-kpi"><span>Latest saved trial</span><strong id="latestSavedTrialFinding">None</strong></div>
+          <div class="finding-card home-kpi-card"><span>A* node saving</span><strong id="plannerEfficiencyFinding">Waiting</strong></div>
+        </div>
+        <div class="hidden-finding-values" aria-hidden="true">
+          <strong id="finalTrialsCount">0</strong>
+          <strong id="baselineFinalRmse">Waiting</strong>
+          <strong id="highNoiseDelta">Waiting</strong>
+          <strong id="collisionFinalTotal">0</strong>
+        </div>
+        <div class="home-dashboard-hint">
+          <span>Detailed charts, all saved trials, failure logs, and README sentence are inside the Analytics Dashboard.</span>
+          <button type="button" class="secondary-button dashboard-launch-btn">Open Full Dashboard</button>
+        </div>
+      </section>
+
+      <div class="legend compact-legend">
+        <p><span class="dot target-dot"></span> Target</p>
+        <p><span class="dot robot-dot"></span> Robot</p>
+        <p><span class="dot sensor-dot"></span> Noisy Measurement</p>
+        <p><span class="dot estimate-dot"></span> Estimate</p>
+        <p><span class="dot occlusion-dot"></span> Occlusion</p>
+        <p><span class="dot motion-event-dot"></span> Motion Change</p>
+        <p><span class="dot future-dot"></span> Future</p>
+        <p><span class="obstacle-swatch"></span> Static Obstacle</p>
+        <p><span class="dynamic-obstacle-swatch"></span> Dynamic Obstacle</p>
+        <p><span class="path-swatch"></span> A* Path</p>
+        <p><span class="dijkstra-path-swatch"></span> Dijkstra Path</p>
+      </div>
+    </section>
+
+    <aside class="inspector-panel" aria-label="Tool inspector side panel">
+      <div class="inspector-header">
+        <div>
+          <p class="eyebrow dark-eyebrow">Inspector</p>
+          <h2>Experiment Console</h2>
+        </div>
+        <p class="small-note">Configure scenarios, run controlled trials, and review system performance.</p>
+      </div>
+
+      <nav class="inspector-quick-nav tabbed-nav" aria-label="Inspector tool panels">
+        <button class="workspace-tab active" type="button" data-pane="inspectorScenariosPane">Scenarios</button>
+        <button class="workspace-tab" type="button" data-pane="inspectorSetupPane">Setup</button>
+        <button class="workspace-tab" type="button" data-pane="inspectorControlsPane">Controls</button>
+        <button class="workspace-tab" type="button" data-pane="inspectorTrialsPane">Trials</button>
+        <button class="workspace-tab" type="button" data-pane="inspectorNotesPane">Notes</button>
+      </nav>
+
+      <div class="inspector-scroll no-heavy-scroll">
+        <section id="inspectorScenariosPane" class="workspace-pane active">
+          <section id="testAssistantPanel" class="tool-section always-open test-assistant-card" aria-label="Scenarios assistant">
+            <div class="section-body">
+              <div class="test-assistant-title-row">
+                <div>
+                  <p class="eyebrow dark-eyebrow">Scenario Runner</p>
+                  <h3>Run controlled scenario trials</h3>
+                </div>
+                <span id="testLoadStatus" class="test-pill">Ready</span>
+              </div>
+
+              <div class="test-case-library">
+                <div class="test-case-library-header">
+                  <div>
+                    <p class="eyebrow dark-eyebrow">Scenario Library</p>
+                    <strong>Select a scenario to load its parameters</strong>
+                  </div>
+                  <span class="test-pill muted-pill">6 fixed cases</span>
+                </div>
+                <div class="test-case-button-grid">
+                  <button type="button" class="test-case-card active" data-test-case="baseline">
+                    <span>01</span>
+                    <strong>Baseline</strong>
+                    <small>Normal reference run</small>
+                  </button>
+                  <button type="button" class="test-case-card" data-test-case="high_noise">
+                    <span>02</span>
+                    <strong>High Noise</strong>
+                    <small>Kalman robustness</small>
+                  </button>
+                  <button type="button" class="test-case-card" data-test-case="line_of_sight_blocked">
+                    <span>03</span>
+                    <strong>LOS Blocked</strong>
+                    <small>Camera cannot see wall</small>
+                  </button>
+                  <button type="button" class="test-case-card" data-test-case="dense_obstacles">
+                    <span>04</span>
+                    <strong>Dense Map</strong>
+                    <small>A* and Dijkstra stress</small>
+                  </button>
+                  <button type="button" class="test-case-card" data-test-case="dynamic_obstacles">
+                    <span>05</span>
+                    <strong>Dynamic Obstacles</strong>
+                    <small>Replanning test</small>
+                  </button>
+                  <button type="button" class="test-case-card" data-test-case="slow_robot">
+                    <span>06</span>
+                    <strong>Slow Robot</strong>
+                    <small>Failure limitation</small>
+                  </button>
+                </div>
+              </div>
+
+
+              <label for="testCaseSelect">Select scenario</label>
+              <select id="testCaseSelect" name="testCase">
+                <option value="baseline">01 · Baseline tracking</option>
+                <option value="high_noise">02 · High sensor noise</option>
+                <option value="line_of_sight_blocked">03 · Line-of-sight blocked</option>
+                <option value="dense_obstacles">04 · Dense obstacle planning</option>
+                <option value="dynamic_obstacles">05 · Dynamic obstacle replanning</option>
+                <option value="slow_robot">06 · Slow robot failure</option>
+              </select>
+
+              <div class="run-setup-grid">
+                <div class="position-field">
+                  <label for="trialModeSelect">Run type</label>
+                  <select id="trialModeSelect" name="trialMode">
+                    <option value="testing">Exploratory run</option>
+                    <option value="final">Report run</option>
+                  </select>
+                </div>
+                <div class="position-field">
+                  <label for="trialDurationInput">Scenarios time</label>
+                  <input type="number" id="trialDurationInput" name="trialDuration" min="5" max="180" step="5" value="30" />
+                </div>
+                <div class="position-field wide-field">
+                  <label for="autoExportSelect">Export after timed run</label>
+                  <select id="autoExportSelect" name="autoExport">
+                    <option value="none">Manual export</option>
+                    <option value="summary">Summary CSV only</option>
+                    <option value="summary_frames">Summary + frame CSV</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="action-row experiment-button-row compact-action-row">
+                <button id="loadScenariosCaseBtn" type="button">Load Scenario</button>
+                <button id="runAutomatedTrialBtn" type="button" class="primary-strong-button">Run Timed Experiment</button>
+                <button id="stopTimedTrialBtn" type="button" class="secondary-button">Stop & Save</button>
+              </div>
+
+              <div class="timer-card compact-timer-card">
+                <div>
+                  <span>Experiment progress</span>
+                  <strong id="trialCountdown">Not running</strong>
+                </div>
+                <progress id="trialProgressBar" value="0" max="100"></progress>
+                <p id="timedTrialStatus" class="small-note">Select a scenario, choose run type, and start a timed experiment.</p>
+              </div>
+
+              <div class="test-info-grid">
+                <div class="test-info-card"><span>Scenario</span><strong id="currentScenariosName">baseline</strong></div>
+                <div class="test-info-card"><span>Primary evidence</span><strong id="currentOutputFile">Baseline system response</strong></div>
+              </div>
+
+              <div class="test-purpose-box">
+                <strong>Purpose</strong>
+                <p id="currentReasonText">Normal reference case for comparing all harder tests.</p>
+              </div>
+
+              <div class="test-purpose-box extraction-box">
+                <strong>Key metrics</strong>
+                <p id="currentValuesToExtract">Tracking RMSE, mean tracking error, detection rate, A* planning time, collision count.</p>
+              </div>
+
+              <div class="test-purpose-box expected-box">
+                <strong>Interpretation</strong>
+                <p id="currentExpectedText">The full system works under normal conditions: target acquisition, Kalman estimation, A* path planning, and safe robot following.</p>
+              </div>
+
+              <div class="test-purpose-box exact-values-box">
+                <strong>Exact values loaded for this case</strong>
+                <p class="setup-controls-sync-note">These values are also pushed into Setup and Controls automatically.</p>
+                <div id="currentExactValues" class="exact-values-grid">
+                  <span>Robot: 120, 430</span>
+                  <span>Target: 820, 430</span>
+                  <span>Noise: 25 px</span>
+                  <span>Range: 700 px</span>
+                  <span>Speed: 2.8 px/frame</span>
+                  <span>Obstacles: Medium</span>
+                  <span>Dynamic: Disabled</span>
+                  <span>Scenario: Normal baseline</span>
+                </div>
+              </div>
+
+              <div class="floating-callout">
+                <strong>Need full analysis?</strong>
+                <p class="small-note">Click <strong>Analytics Dashboard</strong> for large charts, experiment tables, failure graphs, and the README-ready result sentence.</p>
+                <button type="button" class="secondary-button full-button dashboard-launch-btn">Open Analytics Dashboard</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="inspectorSetupPane" class="workspace-pane">
+          <section id="setupPanel" class="tool-section always-open">
+            <div class="section-body">
+              <div class="project-note">
+                <strong>Pipeline</strong>
+                <p>Target Motion → Acquisition → Detection → Kalman Estimation → A* Planning → Robot Control → Evaluation</p>
+              </div>
+              <p class="small-note">Set starting positions before pressing Start. Unsafe positions are shifted to safe free space.</p>
+              <div class="position-input-grid">
+                <div class="position-field"><label for="robotStartXInput">Robot X</label><input type="number" id="robotStartXInput" name="robotStartX" min="0" max="900" step="1" value="120" /></div>
+                <div class="position-field"><label for="robotStartYInput">Robot Y</label><input type="number" id="robotStartYInput" name="robotStartY" min="0" max="500" step="1" value="250" /></div>
+                <div class="position-field"><label for="targetStartXInput">Target X</label><input type="number" id="targetStartXInput" name="targetStartX" min="0" max="900" step="1" value="800" /></div>
+                <div class="position-field"><label for="targetStartYInput">Target Y</label><input type="number" id="targetStartYInput" name="targetStartY" min="0" max="500" step="1" value="200" /></div>
+              </div>
+              <button id="applyStartPositionsBtn" type="button" class="secondary-button full-button">Apply Initial Positions</button>
+              <p id="startPositionStatus" class="small-note setup-status">Ready to start from selected positions.</p>
+            </div>
+          </section>
+        </section>
+
+        <section id="inspectorControlsPane" class="workspace-pane">
+          <section id="controlsPanel" class="tool-section always-open">
+            <div class="section-body stacked-controls">
+              <div class="mini-card">
+                <h3>Environment</h3>
+                <label for="obstacleScenarioSelect">Obstacle Density / Scenario</label>
+                <select id="obstacleScenarioSelect" name="obstacleScenario">
+                  <option value="low">Low obstacles</option>
+                  <option value="medium" selected>Medium obstacles</option>
+                  <option value="high">High obstacles</option>
+                </select>
+
+                <label for="dynamicObstacleModeSelect">Dynamic Obstacles</label>
+                <select id="dynamicObstacleModeSelect" name="dynamicObstacleMode">
+                  <option value="enabled" selected>Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+
+                <label for="dynamicObstacleSpeedSlider">Dynamic Obstacle Speed: <span id="dynamicObstacleSpeedValue">1.0</span>x</label>
+                <input type="range" id="dynamicObstacleSpeedSlider" name="dynamicObstacleSpeed" min="0.2" max="2.0" step="0.1" value="1.0" />
+              </div>
+
+              <div class="mini-card">
+                <h3>Robot Motion</h3>
+                <label for="robotSpeedSlider">Max Velocity: <span id="robotSpeedValue">2.8</span> px/frame</label>
+                <input type="range" id="robotSpeedSlider" name="robotSpeed" min="0.5" max="5" step="0.1" value="2.8" />
+
+                <label for="accelerationLimitSlider">Acceleration Limit: <span id="accelerationLimitValue">0.08</span> px/frame²</label>
+                <input type="range" id="accelerationLimitSlider" name="accelerationLimit" min="0.02" max="0.25" step="0.01" value="0.08" />
+
+                <label for="turnRateSlider">Turning Rate Limit: <span id="turnRateValue">0.06</span> rad/frame</label>
+                <input type="range" id="turnRateSlider" name="turnRate" min="0.01" max="0.20" step="0.01" value="0.06" />
+
+                <label for="safeDistanceSlider">Safe Following Distance: <span id="safeDistanceValue">35</span> px</label>
+                <input type="range" id="safeDistanceSlider" name="safeDistance" min="10" max="100" step="5" value="35" />
+              </div>
+
+              <div class="mini-card">
+                <h3>Sensor and Estimation</h3>
+                <label for="sensorNoiseSlider">Sensor Noise: <span id="sensorNoiseValue">25</span> px</label>
+                <input type="range" id="sensorNoiseSlider" name="sensorNoise" min="0" max="80" step="1" value="25" />
+
+                <label for="cameraRangeSlider">Camera Range: <span id="cameraRangeValue">650</span> px</label>
+                <input type="range" id="cameraRangeSlider" name="cameraRange" min="80" max="700" step="10" value="650" />
+
+                <label for="estimationWindowSlider">Estimation Window: <span id="estimationWindowValue">8</span></label>
+                <input type="range" id="estimationWindowSlider" name="estimationWindow" min="1" max="25" step="1" value="8" />
+
+                <label for="predictionHorizonSlider">Prediction Horizon: <span id="predictionHorizonValue">12</span> frames</label>
+                <input type="range" id="predictionHorizonSlider" name="predictionHorizon" min="1" max="45" step="1" value="12" />
+
+                <label for="desiredRangeSlider">Desired Following Range: <span id="desiredRangeValue">45</span> px</label>
+                <input type="range" id="desiredRangeSlider" name="desiredRange" min="20" max="120" step="5" value="45" />
+
+                <label for="estimationModeSelect">Robot Follows</label>
+                <select id="estimationModeSelect" name="estimationMode">
+                  <option value="movingAverage">Moving Average Estimate</option>
+                  <option value="kalman">Kalman Filter Estimate</option>
+                </select>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="inspectorTrialsPane" class="workspace-pane">
+          <section id="experimentsPanel" class="tool-section always-open">
+            <div class="section-body">
+              <div class="recording-help-box"><strong>Best workflow</strong><p>Select test case → choose Final → set 30 seconds → Run Timed Experiment. It stops automatically and can download CSV files.</p></div>
+              <label for="experimentNameInput">Trial Name</label>
+              <input type="text" id="experimentNameInput" name="experimentName" value="baseline" />
+              <div class="experiment-button-row action-row">
+                <button id="startExperimentBtn" type="button" class="secondary-button">Manual Start Recording</button>
+                <button id="stopExperimentBtn" type="button" class="secondary-button">Stop & Save Trial</button>
+                <button id="exportExperimentCsvBtn" type="button" class="secondary-button">Export Summary CSV</button>
+                <button id="exportExperimentFramesCsvBtn" type="button" class="secondary-button">Export Frame CSV</button>
+                <button id="clearExperimentBtn" type="button" class="secondary-button danger-button">Clear Saved Trials</button>
+              </div>
+              <div class="experiment-metric-grid compact-experiment-grid">
+                <div><span>Status</span><strong id="experimentStatus">Idle</strong></div>
+                <div><span>Elapsed / Target</span><strong id="experimentFrameCount">0s / 30s</strong></div>
+                <div><span>Live Tracking RMSE</span><strong id="experimentLiveRmse">0.00 px</strong></div>
+                <div><span>Saved Trials</span><strong id="experimentSavedCount">0</strong></div>
+              </div>
+              <button type="button" class="secondary-button full-button dashboard-launch-btn">Open Analytics Dashboard</button>
+            </div>
+          </section>
+        </section>
+
+        <section id="inspectorNotesPane" class="workspace-pane">
+          <section id="outputPanel" class="tool-section always-open">
+            <div class="section-body output-list">
+              <div class="test-matrix-card">
+                <p class="eyebrow dark-eyebrow">Fixed Scenarios Matrix</p>
+                <h3>Use these cases for final CSV and outputs</h3>
+                <div class="table-scroll">
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Case</th><th>Robot</th><th>Target</th><th>Noise</th><th>Range</th><th>Speed</th><th>Obstacles</th><th>Dynamic</th><th>Output</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>baseline</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>main-simulation.png</td></tr>
+                      <tr><td>high_noise</td><td>120,430</td><td>820,430</td><td>70</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>kalman-high-noise.png</td></tr>
+                      <tr><td>line_of_sight_blocked</td><td>220,250</td><td>600,250</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>line-of-sight-blocked.png</td></tr>
+                      <tr><td>dense_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>High</td><td>Disabled</td><td>astar-path-planning.png + astar-vs-dijkstra.png</td></tr>
+                      <tr><td>dynamic_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Enabled 1.5x</td><td>dynamic-obstacles.png</td></tr>
+                      <tr><td>slow_robot</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>1.2</td><td>Medium</td><td>Enabled 1.5x</td><td>failure-case-analysis.png</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="test-matrix-card">
+                <p class="eyebrow dark-eyebrow">Fixed Scenarios Matrix</p>
+                <h3>Use these cases for final CSV and outputs</h3>
+                <div class="table-scroll">
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Case</th><th>Robot</th><th>Target</th><th>Noise</th><th>Range</th><th>Speed</th><th>Obstacles</th><th>Dynamic</th><th>Output</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>baseline</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>main-simulation.png</td></tr>
+                      <tr><td>high_noise</td><td>120,430</td><td>820,430</td><td>70</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>kalman-high-noise.png</td></tr>
+                      <tr><td>line_of_sight_blocked</td><td>220,250</td><td>600,250</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>line-of-sight-blocked.png</td></tr>
+                      <tr><td>dense_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>High</td><td>Disabled</td><td>astar-path-planning.png + astar-vs-dijkstra.png</td></tr>
+                      <tr><td>dynamic_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Enabled 1.5x</td><td>dynamic-obstacles.png</td></tr>
+                      <tr><td>slow_robot</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>1.2</td><td>Medium</td><td>Enabled 1.5x</td><td>failure-case-analysis.png</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <p><strong>main-simulation.png</strong> — canvas plus top status when target is acquired and A* path is visible.</p>
+              <p><strong>kalman-high-noise.png</strong> — increase sensor noise; capture orange noisy measurement and smoother green estimate.</p>
+              <p><strong>line-of-sight-blocked.png</strong> — place robot and target across an obstacle; capture blocked status plus canvas.</p>
+              <p><strong>astar-path-planning.png</strong> — capture A* path going around grey obstacles.</p>
+              <p><strong>astar-vs-dijkstra.png</strong> — open dashboard Planner tab and capture comparison values.</p>
+              <p><strong>dynamic-obstacles.png</strong> — enable dynamic obstacles and capture moving obstacles plus replans count.</p>
+              <p><strong>failure-case-analysis.png</strong> — use dashboard Failure tab and capture diagnosis/severity/log.</p>
+              <p><strong>controlled-experiments.png</strong> — use dashboard Trials tab and capture saved trial count/table.</p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <div id="dashboardModal" class="dashboard-modal" aria-hidden="true">
+    <div class="dashboard-backdrop" data-close-dashboard></div>
+    <div class="dashboard-dialog" role="dialog" aria-modal="true" aria-labelledby="dashboardTitle">
+      <div class="dashboard-header">
+        <div>
+          <p class="eyebrow dark-eyebrow">Analytics Dashboard</p>
+          <h2 id="dashboardTitle">System performance, planner analysis, and trial results</h2>
+        </div>
+        <div class="dashboard-header-actions">
+          <label for="dashboardFilterSelect">View</label>
+          <select id="dashboardFilterSelect" name="dashboardFilter">
+            <option value="final">Report runs only</option>
+            <option value="testing">Exploratory runs only</option>
+            <option value="all">All runs</option>
+          </select>
+          <span id="storageStatus" class="test-pill muted-pill">Local save ready</span>
+          <button id="closeDashboardBtn" type="button" class="secondary-button">Close</button>
+        </div>
+      </div>
+
+      <nav class="dashboard-tabs" aria-label="Dashboard sections">
+        <button class="dashboard-tab active" type="button" data-dashboard-pane="overviewPane">Overview</button>
+        <button class="dashboard-tab" type="button" data-dashboard-pane="graphsPane">Graphs</button>
+        <button class="dashboard-tab" type="button" data-dashboard-pane="plannerPane">Planner</button>
+        <button class="dashboard-tab" type="button" data-dashboard-pane="trialsPane">Trials</button>
+        <button class="dashboard-tab" type="button" data-dashboard-pane="failurePaneWrap">Failure</button>
+        <button class="dashboard-tab" type="button" data-dashboard-pane="guidePane">Notes</button>
+      </nav>
+
+      <div class="dashboard-content">
+        <section id="overviewPane" class="dashboard-pane active">
+          <section id="findingsPanel" class="tool-section always-open findings-panel" aria-label="Findings dashboard">
+            <div class="section-body">
+              <div class="section-header-inline">
+                <div>
+                  <p class="eyebrow dark-eyebrow">Findings Dashboard</p>
+                  <h3>Compare testing and final runs</h3>
+                </div>
+              </div>
+
+              <div class="table-scroll findings-table-scroll">
+                <table class="comparison-table findings-table">
+                  <thead>
+                    <tr>
+                      <th>Mark</th><th>Trial</th><th>RMSE</th><th>Detection</th><th>LOS blocked</th>
+                      <th>A* nodes</th><th>Dijkstra nodes</th><th>A* saving</th><th>Replans</th><th>Collisions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dashboardResultsBody">
+                    <tr><td colspan="10">No final trials yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="readme-draft-box">
+                <strong>Report-ready finding</strong>
+                <p id="readmeFindingText">Record report runs to generate a concise performance finding from measured values.</p>
+                <div class="action-row experiment-button-row compact-action-row">
+                  <button id="copyReadmeFindingBtn" type="button" class="secondary-button">Copy Finding</button>
+                  <button id="exportFinalReportBtn" type="button" class="secondary-button">Download Report</button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="graphsPane" class="dashboard-pane">
+          <section id="graphsPanel" class="tool-section always-open">
+            <div class="section-body">
+              <div class="mini-tabs" role="tablist" aria-label="Graph panels">
+                <button class="graph-tool-tab active" type="button" data-graph="errorGraphPanel">Error</button>
+                <button class="graph-tool-tab" type="button" data-graph="positionGraphPanel">Position</button>
+                <button class="graph-tool-tab" type="button" data-graph="comparisonGraphPanel">Estimator</button>
+                <button class="graph-tool-tab" type="button" data-graph="motionGraphPanel">Motion</button>
+                <button class="graph-tool-tab" type="button" data-graph="followingGraphPanel">Following</button>
+              </div>
+
+              <div class="graph-panel active" id="errorGraphPanel"><h3>Tracking Error Over Time</h3><canvas id="errorGraphCanvas" width="900" height="240"></canvas></div>
+              <div class="graph-panel" id="positionGraphPanel"><h3>Target Position vs Robot Position</h3><canvas id="positionGraphCanvas" width="900" height="260"></canvas></div>
+              <div class="graph-panel" id="comparisonGraphPanel"><h3>Estimator RMSE Comparison</h3><canvas id="comparisonGraphCanvas" width="900" height="260"></canvas></div>
+              <div class="graph-panel" id="motionGraphPanel"><h3>Kalman Error Around Sudden Motion Changes</h3><canvas id="motionEventGraphCanvas" width="900" height="260"></canvas></div>
+              <div class="graph-panel" id="followingGraphPanel"><h3>Robot Following Strategy Comparison</h3><canvas id="futurePredictionGraphCanvas" width="900" height="260"></canvas></div>
+
+              <div class="dashboard-two-column">
+                <div>
+                  <h3 class="subheading">Estimator Comparison</h3>
+                  <div class="table-scroll">
+                    <table class="comparison-table">
+                      <thead><tr><th>Method</th><th>Now</th><th>Mean</th><th>RMSE</th><th>Max</th></tr></thead>
+                      <tbody>
+                        <tr><td>Raw</td><td id="rawInstantError">0.00</td><td id="rawMeanError">0.00</td><td id="rawRmse">0.00</td><td id="rawMaxError">0.00</td></tr>
+                        <tr><td>MA</td><td id="maInstantError">0.00</td><td id="maMeanError">0.00</td><td id="maRmse">0.00</td><td id="maMaxError">0.00</td></tr>
+                        <tr><td>KF</td><td id="kfInstantError">0.00</td><td id="kfMeanError">0.00</td><td id="kfRmse">0.00</td><td id="kfMaxError">0.00</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="subheading">Robot Following Comparison</h3>
+                  <div class="table-scroll">
+                    <table class="comparison-table">
+                      <thead><tr><th>Strategy</th><th>Mean Dist.</th><th>Max Dist.</th><th>Within Range</th></tr></thead>
+                      <tbody>
+                        <tr><td>Raw</td><td id="rawFollowMeanDistance">0.00</td><td id="rawFollowMaxDistance">0.00</td><td id="rawFollowWithinRange">0.0%</td></tr>
+                        <tr><td>KF</td><td id="kfFollowMeanDistance">0.00</td><td id="kfFollowMaxDistance">0.00</td><td id="kfFollowWithinRange">0.0%</td></tr>
+                        <tr><td>Future</td><td id="futureFollowMeanDistance">0.00</td><td id="futureFollowMaxDistance">0.00</td><td id="futureFollowWithinRange">0.0%</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="plannerPane" class="dashboard-pane">
+          <section id="metricsPanel" class="tool-section always-open">
+            <div class="section-body metric-grid full-metrics-grid">
+              <div class="metric-card"><span>Sensor Noise</span><strong id="sensorNoise">25 px</strong></div>
+              <div class="metric-card"><span>Prediction Error</span><strong id="predictionError">0.00 px</strong></div>
+              <div class="metric-card"><span>Occlusion Status</span><strong id="occlusionStatus">Visible</strong></div>
+              <div class="metric-card"><span>Normal Estimation Error</span><strong id="normalEstimateError">0.00 px</strong></div>
+              <div class="metric-card"><span>Occlusion Estimation Error</span><strong id="occlusionEstimateError">0.00 px</strong></div>
+              <div class="metric-card"><span>Recovery Time</span><strong id="recoveryTime">--</strong></div>
+              <div class="metric-card"><span>Motion Event Status</span><strong id="motionEventStatus">Normal motion</strong></div>
+              <div class="metric-card"><span>Motion Event Count</span><strong id="motionEventCount">0</strong></div>
+              <div class="metric-card"><span>Motion Event Mean Error</span><strong id="motionEventKalmanError">0.00 px</strong></div>
+              <div class="metric-card"><span>Frames Since Detection</span><strong id="framesSinceDetection">0</strong></div>
+            </div>
+          </section>
+
+          <section id="planningPanel" class="tool-section always-open">
+            <div class="section-body">
+              <div class="metric-grid full-metrics-grid">
+                <div class="metric-card"><span>A* Path Status</span><strong id="astarPathStatus">Waiting</strong></div>
+                <div class="metric-card"><span>A* Path Length</span><strong id="astarPathLength">0.00 px</strong></div>
+                <div class="metric-card"><span>A* Planning Time</span><strong id="astarPlanningTime">0.00 ms</strong></div>
+                <div class="metric-card"><span>A* Explored Nodes</span><strong id="astarCompareNodes">0</strong></div>
+                <div class="metric-card"><span>Dijkstra Path Status</span><strong id="dijkstraPathStatus">Waiting</strong></div>
+                <div class="metric-card"><span>Dijkstra Path Length</span><strong id="dijkstraPathLength">0.00 px</strong></div>
+                <div class="metric-card"><span>Dijkstra Planning Time</span><strong id="dijkstraPlanningTime">0.00 ms</strong></div>
+                <div class="metric-card"><span>Dijkstra Explored Nodes</span><strong id="dijkstraExploredNodes">0</strong></div>
+                <div class="metric-card"><span>Obstacle Collision Count</span><strong id="astarCollisionCount">0</strong></div>
+                <div class="metric-card"><span>Dynamic Obstacle Status</span><strong id="dynamicObstacleStatus">Enabled</strong></div>
+                <div class="metric-card"><span>Dynamic Obstacle Count</span><strong id="dynamicObstacleCount">0</strong></div>
+                <div class="metric-card"><span>Dynamic Replans</span><strong id="dynamicObstacleReplans">0</strong></div>
+              </div>
+
+              <h3 class="subheading">Planner Comparison</h3>
+              <div class="table-scroll">
+                <table class="comparison-table">
+                  <thead>
+                    <tr><th>Planner</th><th>Status</th><th>Path Length</th><th>Planning Time</th><th>Explored Nodes</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>A*</td><td id="astarCompareStatus">Waiting</td><td id="astarCompareLength">0.00 px</td><td id="astarCompareTime">0.00 ms</td><td id="astarCompareNodesMirror">0</td></tr>
+                    <tr><td>Dijkstra</td><td id="dijkstraCompareStatus">Waiting</td><td id="dijkstraCompareLength">0.00 px</td><td id="dijkstraCompareTime">0.00 ms</td><td id="dijkstraCompareNodes">0</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="small-note">The robot follows A*. Dijkstra runs in parallel only for comparison.</p>
+            </div>
+          </section>
+        </section>
+
+        <section id="trialsPane" class="dashboard-pane">
+          <section class="tool-section always-open">
+            <div class="section-body">
+              <h3 class="subheading">Experiment Summary</h3>
+              <canvas id="experimentGraphCanvas" width="900" height="260"></canvas>
+              <h3 class="subheading">Experiment Results Table</h3>
+              <div class="table-scroll">
+                <table class="comparison-table experiment-table">
+                  <thead>
+                    <tr>
+                      <th>Mark</th><th>Trial</th><th>Scenario</th><th>Noise</th><th>Speed</th><th>Duration</th>
+                      <th>Tracking RMSE</th><th>Detection</th><th>A* Time</th><th>Dijkstra Time</th><th>Collisions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="experimentResultsBody">
+                    <tr><td colspan="11">No recorded trials yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="failurePaneWrap" class="dashboard-pane">
+          <section id="failurePanel" class="tool-section always-open">
+            <div class="section-body">
+              <div class="metric-grid full-metrics-grid">
+                <div class="metric-card"><span>Active Failure Case</span><strong id="activeFailureCase">None</strong></div>
+                <div class="metric-card"><span>Failure Severity</span><strong id="failureSeverity">Normal</strong></div>
+                <div class="metric-card"><span>Failure Log Count</span><strong id="failureLogCount">0</strong></div>
+              </div>
+              <div class="failure-summary-box slim-summary">
+                <strong id="failureDiagnosisTitle">No active failure</strong>
+                <p id="failureDiagnosisText">The system is currently operating normally. Run a failure scenario or wait for a difficult condition.</p>
+                <p id="failureMitigationText" class="small-note">Mitigation: continue monitoring tracking error, visibility, path status, and collision count.</p>
+              </div>
+              <label for="failureScenarioSelect">Scenario</label>
+              <select id="failureScenarioSelect" name="failureScenario">
+                <option value="normal" selected>Normal baseline</option>
+                <option value="hiddenStart">Target initially hidden behind obstacle</option>
+                <option value="lowCameraRange">Target outside camera range</option>
+                <option value="highNoise">High camera noise</option>
+                <option value="plannerStress">Dense obstacle planning stress</option>
+                <option value="slowRobot">Robot too slow for target/dynamic obstacles</option>
+              </select>
+              <div class="experiment-button-row action-row">
+                <button id="applyFailureScenarioBtn" type="button" class="secondary-button">Apply Failure Scenario</button>
+                <button id="clearFailureLogBtn" type="button" class="secondary-button danger-button">Clear Failure Log</button>
+                <button id="exportFailureCsvBtn" type="button" class="secondary-button">Export Failure CSV</button>
+              </div>
+              <h3 class="subheading">Failure Case Timeline</h3>
+              <canvas id="failureGraphCanvas" width="900" height="240"></canvas>
+              <h3 class="subheading">Failure Log</h3>
+              <div class="table-scroll">
+                <table class="comparison-table failure-table">
+                  <thead><tr><th>Frame</th><th>Case</th><th>Severity</th><th>Cause</th><th>Mitigation</th></tr></thead>
+                  <tbody id="failureLogBody">
+                    <tr><td colspan="5">No failure cases recorded yet.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="guidePane" class="dashboard-pane">
+          <section class="tool-section always-open">
+            <div class="section-body output-list">
+              <div class="test-matrix-card">
+                <p class="eyebrow dark-eyebrow">Scenario Matrix</p>
+                <h3>Controlled evaluation cases</h3>
+                <div class="table-scroll">
+                  <table class="comparison-table">
+                    <thead>
+                      <tr>
+                        <th>Scenario</th><th>Robot</th><th>Target</th><th>Noise</th><th>Range</th><th>Speed</th><th>Obstacles</th><th>Dynamic</th><th>Purpose</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>baseline</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>Normal reference response</td></tr>
+                      <tr><td>high_noise</td><td>120,430</td><td>820,430</td><td>70</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>Sensor-noise robustness</td></tr>
+                      <tr><td>line_of_sight_blocked</td><td>220,250</td><td>600,250</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Disabled</td><td>Visibility-aware sensing</td></tr>
+                      <tr><td>dense_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>High</td><td>Disabled</td><td>Planner performance under clutter</td></tr>
+                      <tr><td>dynamic_obstacles</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>2.8</td><td>Medium</td><td>Enabled 1.5x</td><td>Reactive replanning</td></tr>
+                      <tr><td>slow_robot</td><td>120,430</td><td>820,430</td><td>25</td><td>700</td><td>1.2</td><td>Medium</td><td>Enabled 1.5x</td><td>Control-limit failure case</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <p><strong>Reading the results</strong> — lower RMSE indicates stronger target following; higher detection rate indicates better visibility; fewer A* nodes than Dijkstra indicates more efficient goal-directed planning.</p>
+              <p><strong>System limitation</strong> — this is a 2D browser-based simulation, not a deployed physical robot. Future extensions include ROS 2/Webots validation and real camera-based perception.</p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <details id="webcamPanel" class="tool-section final-hidden" aria-hidden="true">
+    <summary>08 · Webcam Lab</summary>
+    <div class="section-body">
+      <p class="small-note">Hidden in simulation-only mode.</p>
+      <label for="measurementSourceSelect">Target Source</label>
+      <select id="measurementSourceSelect" name="measurementSource">
+        <option value="simulation" selected>Simulated target motion</option>
+        <option value="webcam">Webcam red-object tracker</option>
+      </select>
+      <div class="webcam-preview-grid">
+        <video id="webcamVideo" autoplay playsinline muted></video>
+        <canvas id="webcamPreviewCanvas" width="240" height="160"></canvas>
+      </div>
+      <div class="experiment-button-row action-row webcam-button-row">
+        <button id="startWebcamBtn" type="button" class="secondary-button">Start Webcam</button>
+        <button id="stopWebcamBtn" type="button" class="secondary-button danger-button">Stop Webcam</button>
+      </div>
+      <div class="metric-grid full-metrics-grid">
+        <div class="metric-card"><span>Webcam Status</span><strong id="webcamStatus">Simulation mode</strong></div>
+        <div class="metric-card"><span>Webcam Detection</span><strong id="webcamDetection">Off</strong></div>
+        <div class="metric-card"><span>Mapped Coordinate</span><strong id="webcamCoordinate">--</strong></div>
+        <div class="metric-card"><span>Confidence</span><strong id="webcamConfidence">0.0%</strong></div>
+      </div>
+    </div>
+  </details>
+
+  <script src="script.js"></script>
+  <script>
+    const graphToolTabs = document.querySelectorAll('.graph-tool-tab');
+    const graphPanels = document.querySelectorAll('.graph-panel');
+    graphToolTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const graphId = tab.dataset.graph;
+        graphToolTabs.forEach((item) => item.classList.remove('active'));
+        graphPanels.forEach((panel) => panel.classList.remove('active'));
+        tab.classList.add('active');
+        const targetPanel = document.getElementById(graphId);
+        if (targetPanel) targetPanel.classList.add('active');
+      });
+    });
+
+    const workspaceTabs = document.querySelectorAll('.workspace-tab');
+    const workspacePanes = document.querySelectorAll('.workspace-pane');
+    workspaceTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const paneId = tab.dataset.pane;
+        workspaceTabs.forEach((item) => item.classList.remove('active'));
+        workspacePanes.forEach((pane) => pane.classList.remove('active'));
+        tab.classList.add('active');
+        const pane = document.getElementById(paneId);
+        if (pane) pane.classList.add('active');
+      });
+    });
+
+    const dashboardModal = document.getElementById('dashboardModal');
+    const openDashboardBtn = document.getElementById('openDashboardBtn');
+    const closeDashboardBtn = document.getElementById('closeDashboardBtn');
+    const dashboardLaunchBtns = document.querySelectorAll('.dashboard-launch-btn');
+    const dashboardCloseTargets = document.querySelectorAll('[data-close-dashboard]');
+    function openDashboard() {
+      dashboardModal.classList.add('open');
+      dashboardModal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('modal-open');
+    }
+    function closeDashboard() {
+      dashboardModal.classList.remove('open');
+      dashboardModal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('modal-open');
+    }
+    if (openDashboardBtn) openDashboardBtn.addEventListener('click', openDashboard);
+    if (closeDashboardBtn) closeDashboardBtn.addEventListener('click', closeDashboard);
+    dashboardLaunchBtns.forEach((btn) => btn.addEventListener('click', openDashboard));
+    dashboardCloseTargets.forEach((btn) => btn.addEventListener('click', closeDashboard));
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && dashboardModal.classList.contains('open')) {
+        closeDashboard();
+      }
+    });
+
+    const dashboardTabs = document.querySelectorAll('.dashboard-tab');
+    const dashboardPanes = document.querySelectorAll('.dashboard-pane');
+    dashboardTabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const paneId = tab.dataset.dashboardPane;
+        dashboardTabs.forEach((item) => item.classList.remove('active'));
+        dashboardPanes.forEach((pane) => pane.classList.remove('active'));
+        tab.classList.add('active');
+        const pane = document.getElementById(paneId);
+        if (pane) pane.classList.add('active');
+      });
+    });
+
+    const astarCompareNodesSource = document.getElementById('astarCompareNodes');
+    const astarCompareNodesMirror = document.getElementById('astarCompareNodesMirror');
+    const syncAstarNodes = () => {
+      if (astarCompareNodesSource && astarCompareNodesMirror) {
+        astarCompareNodesMirror.textContent = astarCompareNodesSource.textContent;
+      }
+    };
+    syncAstarNodes();
+    if (astarCompareNodesSource) {
+      const observer = new MutationObserver(syncAstarNodes);
+      observer.observe(astarCompareNodesSource, { childList: true, subtree: true, characterData: true });
+    }
+
+/* ---------- Compact UI test-case card helpers ---------- */
+function refreshVisibleScenariosCaseCards() {
+  const select = document.getElementById("testCaseSelect");
+  if (!select) return;
+  const activeValue = select.value;
+  document.querySelectorAll(".test-case-card").forEach((card) => {
+    card.classList.toggle("active", card.dataset.testCase === activeValue);
+  });
+}
+
+function getReadableScenariosCaseValues(caseKey) {
+  const data = {
+    baseline: [
+      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
+      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: Normal baseline"
+    ],
+    high_noise: [
+      "Robot: 120, 430", "Target: 820, 430", "Noise: 70 px", "Range: 700 px",
+      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: High camera noise"
+    ],
+    line_of_sight_blocked: [
+      "Robot: 220, 250", "Target: 600, 250", "Noise: 25 px", "Range: 700 px",
+      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Disabled", "Scenario: LOS blocked"
+    ],
+    dense_obstacles: [
+      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
+      "Speed: 2.8 px/frame", "Obstacles: High", "Dynamic: Disabled", "Scenario: Dense planning"
+    ],
+    dynamic_obstacles: [
+      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
+      "Speed: 2.8 px/frame", "Obstacles: Medium", "Dynamic: Enabled 1.5x", "Scenario: Replanning"
+    ],
+    slow_robot: [
+      "Robot: 120, 430", "Target: 820, 430", "Noise: 25 px", "Range: 700 px",
+      "Speed: 1.2 px/frame", "Obstacles: Medium", "Dynamic: Enabled 1.5x", "Scenario: Slow robot failure"
+    ]
+  };
+  return data[caseKey] || data.baseline;
+}
+
+function updateExactValuesPanel() {
+  const select = document.getElementById("testCaseSelect");
+  const exactPanel = document.getElementById("currentExactValues");
+  if (!select || !exactPanel) return;
+  exactPanel.innerHTML = "";
+  getReadableScenariosCaseValues(select.value).forEach((text) => {
+    const item = document.createElement("span");
+    item.textContent = text;
+    exactPanel.appendChild(item);
+  });
+  refreshVisibleScenariosCaseCards();
+}
+
+document.querySelectorAll(".test-case-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    const select = document.getElementById("testCaseSelect");
+    if (!select) return;
+    select.value = card.dataset.testCase;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    updateExactValuesPanel();
+    const loadButton = document.getElementById("loadScenariosCaseBtn");
+    if (loadButton) loadButton.click();
+  });
+});
+
+const visibleScenariosSelect = document.getElementById("testCaseSelect");
+if (visibleScenariosSelect) {
+  visibleScenariosSelect.addEventListener("change", updateExactValuesPanel);
+}
+updateExactValuesPanel();
+
+
+/* ---------- Direct scenario shortcut hard-loader fix ---------- */
+function setFieldValueAndNotify(id, value) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.value = String(value);
+  element.dispatchEvent(new Event("input", { bubbles: true }));
+  element.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+function getDirectScenarioConfig(caseKey) {
+  const cases = {
+    baseline: {
+      robotX: 120,
+      robotY: 430,
+      targetX: 820,
+      targetY: 430,
+      noise: 25,
+      range: 700,
+      speed: 2.8,
+      obstacle: "medium",
+      dynamicMode: "disabled",
+      dynamicSpeed: 1.0,
+      failureScenario: "normal",
+      trialName: "baseline",
+      evidence: "Baseline system response"
+    },
+    high_noise: {
+      robotX: 120,
+      robotY: 430,
+      targetX: 820,
+      targetY: 430,
+      noise: 70,
+      range: 700,
+      speed: 2.8,
+      obstacle: "medium",
+      dynamicMode: "disabled",
+      dynamicSpeed: 1.0,
+      failureScenario: "highNoise",
+      trialName: "high_noise",
+      evidence: "High-noise estimator response"
+    },
+    line_of_sight_blocked: {
+      robotX: 220,
+      robotY: 250,
+      targetX: 600,
+      targetY: 250,
+      noise: 25,
+      range: 700,
+      speed: 2.8,
+      obstacle: "medium",
+      dynamicMode: "disabled",
+      dynamicSpeed: 1.0,
+      failureScenario: "hiddenStart",
+      trialName: "line_of_sight_blocked",
+      evidence: "Line-of-sight blocking response"
+    },
+    dense_obstacles: {
+      robotX: 120,
+      robotY: 430,
+      targetX: 820,
+      targetY: 430,
+      noise: 25,
+      range: 700,
+      speed: 2.8,
+      obstacle: "high",
+      dynamicMode: "disabled",
+      dynamicSpeed: 1.0,
+      failureScenario: "plannerStress",
+      trialName: "dense_obstacles",
+      evidence: "Dense-map planner response"
+    },
+    dynamic_obstacles: {
+      robotX: 120,
+      robotY: 430,
+      targetX: 820,
+      targetY: 430,
+      noise: 25,
+      range: 700,
+      speed: 2.8,
+      obstacle: "medium",
+      dynamicMode: "enabled",
+      dynamicSpeed: 1.5,
+      failureScenario: "normal",
+      trialName: "dynamic_obstacles",
+      evidence: "Dynamic replanning response"
+    },
+    slow_robot: {
+      robotX: 120,
+      robotY: 430,
+      targetX: 820,
+      targetY: 430,
+      noise: 25,
+      range: 700,
+      speed: 1.2,
+      obstacle: "medium",
+      dynamicMode: "enabled",
+      dynamicSpeed: 1.5,
+      failureScenario: "slowRobot",
+      trialName: "slow_robot",
+      evidence: "Control-limit failure response"
+    }
+  };
+  return cases[caseKey] || cases.baseline;
+}
+
+function applyDirectScenarioToVisibleControls(caseKey) {
+  const config = getDirectScenarioConfig(caseKey);
+
+  const testCaseSelectEl = document.getElementById("testCaseSelect");
+  if (testCaseSelectEl) testCaseSelectEl.value = caseKey;
+  setFieldValueAndNotify("robotStartXInput", config.robotX);
+  setFieldValueAndNotify("robotStartYInput", config.robotY);
+  setFieldValueAndNotify("targetStartXInput", config.targetX);
+  setFieldValueAndNotify("targetStartYInput", config.targetY);
+  setFieldValueAndNotify("sensorNoiseSlider", config.noise);
+  setFieldValueAndNotify("cameraRangeSlider", config.range);
+  setFieldValueAndNotify("robotSpeedSlider", config.speed);
+  setFieldValueAndNotify("obstacleScenarioSelect", config.obstacle);
+  setFieldValueAndNotify("dynamicObstacleModeSelect", config.dynamicMode);
+  setFieldValueAndNotify("dynamicObstacleSpeedSlider", config.dynamicSpeed);
+  setFieldValueAndNotify("failureScenarioSelect", config.failureScenario);
+  setFieldValueAndNotify("experimentNameInput", config.trialName);
+
+  const evidenceElement = document.getElementById("currentScreenshotFile");
+  if (evidenceElement) evidenceElement.textContent = config.evidence;
+
+  if (typeof updateExactValuesPanel === "function") {
+    updateExactValuesPanel();
+  }
+  if (typeof refreshVisibleTestCaseCards === "function") {
+    refreshVisibleTestCaseCards();
+  }
+
+  const applyButton = document.getElementById("applyStartPositionsBtn");
+  if (applyButton) applyButton.click();
+
+  const loadStatus = document.getElementById("testLoadStatus");
+  if (loadStatus) {
+    loadStatus.textContent = "Loaded";
+    setTimeout(() => {
+      loadStatus.textContent = "Ready";
+    }, 1200);
+  }
+}
+
+document.querySelectorAll(".test-case-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    applyDirectScenarioToVisibleControls(card.dataset.testCase);
+  });
+});
+
+const scenarioSelectFix = document.getElementById("testCaseSelect");
+if (scenarioSelectFix) {
+  scenarioSelectFix.addEventListener("change", () => {
+    applyDirectScenarioToVisibleControls(scenarioSelectFix.value);
+  });
+}
+
+
+/* Make Load Scenario button also update visible Setup/Controls values */
+const loadScenarioButtonFix = document.getElementById("loadTestCaseBtn");
+if (loadScenarioButtonFix) {
+  loadScenarioButtonFix.addEventListener("click", () => {
+    const select = document.getElementById("testCaseSelect");
+    if (select) applyDirectScenarioToVisibleControls(select.value);
+  }, true);
+}
+
+  </script>
+</body>
+</html>

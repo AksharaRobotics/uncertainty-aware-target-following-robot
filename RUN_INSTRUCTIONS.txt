@@ -1,0 +1,13 @@
+How to run
+
+1. Extract the ZIP.
+2. Open terminal inside this project folder.
+3. Run:
+
+   python -m http.server 8000
+
+4. Open Chrome and go to:
+
+   http://localhost:8000
+
+5. Use the inspector panel to set test cases, record trials, export CSV files, and capture screenshots.

@@ -1,0 +1,6 @@
+trial_name,duration_seconds,sensor_noise,camera_range,obstacle_density,dynamic_obstacles,dynamic_obstacle_speed,tracking_rmse,mean_tracking_error,detection_rate,line_of_sight_blocked_rate,occlusion_rate,astar_planning_time_ms,dijkstra_planning_time_ms,astar_explored_nodes,dijkstra_explored_nodes,collision_count,dynamic_replans,notes
+baseline,,,,,,,,,,,,,,,,,,
+high_noise,,,,,,,,,,,,,,,,,,
+dense_obstacles,,,,,,,,,,,,,,,,,,
+fast_dynamic_obstacles,,,,,,,,,,,,,,,,,,
+webcam_validation,,,,,,,,,,,,,,,,,,
