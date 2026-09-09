@@ -132,7 +132,6 @@ With dynamic obstacles enabled, the planner triggered **401 replans** while reco
 | TESTING | dynamic_obstacles | 475.28 px | 1.4% | 94.5% | 57.5 | 131.9 | 56.4% | 401 | 0 |
 
 ---
----
 
 ## System Demonstration
 
@@ -298,17 +297,19 @@ The simulation is implemented using HTML, CSS, JavaScript, and the Canvas API. N
 ├── LICENSE
 ├── RUN_INSTRUCTIONS.txt
 ├── docs/
-│   ├── demo-script.md
-│   ├── interview-qa.md
-│   ├── portfolio-text.md
-│   ├── project-notes.md
-│   └── robotics_project_quantitative_test_plan.xlsx
+│   └── final-results.md
 ├── results/
-│   └── experiment-summary-template.csv
+│   ├── experiment-summary.csv
+│   └── frame-log.csv
 └── assets/
     └── screenshots/
-```
-
+        ├── main-simulation.png
+        ├── kalman-high-noise.png
+        ├── line-of-sight-blocked.png
+        ├── astar-vs-dijkstra.png
+        ├── dynamic-obstacles.png
+        ├── failure-case-analysis.png
+        └── experiment-results-dashboard.png
 ---
 
 ## Tech Stack
